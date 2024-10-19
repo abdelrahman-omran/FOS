@@ -1,6 +1,7 @@
-# FOSv2
+# FCIS Operating System - FOS (v1 & v2)
 
-[FOS][fos-v1] is an educational OS for Ain Shams University Operating Systems Course CSW355, forked and refactored from [MIT Operating Systems Lab 6.828][mit-6.828]. It was created by [Dr. Mahmoud Hossam][dr-m-h] and currently maintained by [Dr. Ahmed Salah][dr-a-s].  
+[FOS][fos-v1] is an educational OS for Ain Shams University Operating Systems Course CSW355, forked and refactored from [MIT Operating Systems Lab 6.828][mit-6.828]. It was created by [Dr. Mahmoud Hossam][dr-m-h] and currently maintained by [Dr. Ahmed Salah][dr-a-s].
+
 **FOSv2** is the next version of FOS. It provides a much faster and better environment using other editing and virtualization tools.
 
 [fos-v1]: https://github.com/mahossam/FOS-Ain-Shams-University-Educational-OS
