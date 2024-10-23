@@ -10,314 +10,146 @@
 
 
 
-Physical memory: 32768K available, base = 640K, extended = 31744K
-Max Envs = 1379
-check_boot_pgdir() succeeded!
+
+********************************************************************
+* INITIALIZATIONS:
+*=================
+* 1) CPU...[DONE]
+* 2) MEMORY:
+*	     Physical memory: 32768K available, base = 640K, extended = 31744K
+*	     Max Envs = 8, Nearest Pow of 2 = 8
+*	     check_boot_pgdir() succeeded!
+* 3) USER ENVs...[DONE]
+* 4) PROGRAMMABLE INTERRUPT CONTROLLER:
+*	     PIC is initialized
+*	     IRQ0 (Clock): is Enabled
+*	     IRQ1 (Keyboard): is Enabled
+*	     IRQ4 (COM1): is Enabled
+* 5) SCHEDULER & MULTI-TASKING:
+*	     RR scheduler with initial clock = 11909
+* 6) ESP to SCHED KERN STACK:
+*	     old SP = f017cfd0 - updated SP = efbfffd0
+********************************************************************
 
 Welcome to the FOS kernel command prompt!
 Type 'help' for a list of commands.
-FOS> fififo
-Page replacement algorithm is now FIFO
-FOS> run tfifo2 9
+FOS> help
+help - Display this list of commands
+kernel_info - Display information about the kernel
+meminfo - display info about RAM
+sched? - print current scheduler algorithm
+runall - run all loaded programs
+printall - print all loaded programs
+killall - kill all environments in the system
+fifo - set replacement algorithm to FIFO
+clock - set replacement algorithm to CLOCK
+modifiedclock - set replacement algorithm to modified CLOCK
+rep? - print current replacement algorithm
+uhfirstfit - set USER heap placement strategy to FIRST FIT
+uhbestfit - set USER heap placement strategy to BEST FIT
+uhnextfit - set USER heap placement strategy to NEXT FIT
+uhworstfit - set USER heap placement strategy to WORST FIT
+uheap? - print current USER heap placement strategy
+khcontalloc - set KERNEL heap placement strategy to CONTINUOUS ALLOCATION
+khfirstfit - set KERNEL heap placement strategy to FIRST FIT
+khbestfit - set KERNEL heap placement strategy to BEST FIT
+khnextfit - set KERNEL heap placement strategy to NEXT FIT
+khworstfit - set KERNEL heap placement strategy to WORST FIT
+kheap? - print current KERNEL heap placement strategy
+nobuff - disable buffering
+buff - enable buffering
+nomodbuff - disable modified buffer
+modbuff - enable modified buffer
+modbufflength? - get modified buffer length
+kill - kill the given environment (by its ID) from the system
+rm - reads one byte from specific physical location
+schedRR - switch the scheduler to RR with given quantum
+schedTest - Used for turning on/off the scheduler test
+lru - set replacement algorithm to LRU
+nclock - set replacement algorithm to Nth chance CLOCK
+modbufflength - set the length of the modified buffer
+wm - writes one byte to specific physical location
+schedBSD - switch the scheduler to BSD with given # queues & quantum
+rub - reads block of bytes from specific location in given environment
+run - runs a single user program
+wum - writes one byte to specific location in kernel or a given environment
+rum - reads one byte from specific location in kernel or a given environment
+schedMLFQ - switch the scheduler to MLFQ with given # queues & quantums
+load - load a single user program to mem with status = NEW
+tst - run the given test
+-------------------
+run fos_helloWorld - Created by FOS team, fos@nowhere.com [User Program]
+run fos_add - Created by FOS team, fos@nowhere.com [User Program]
+run fos_alloc - Created by FOS team, fos@nowhere.com [User Program]
+run fos_input - Created by FOS team, fos@nowhere.com [User Program]
+run fos_game - Created by FOS team, fos@nowhere.com [User Program]
+run fos_static_data_section - Created by FOS team, fos@nowhere.com [User Program]
+run fos_data_on_stack - Created by FOS team, fos@nowhere.com [User Program]
+run cnc - Concurrent program test [User Program]
+run tst_chan_all - Tests sleep & wakeup ALL on a channel [User Program]
+run tstChanAllSlave - Slave program of tst_chan_all [User Program]
+run tst_chan_one - Tests sleep & wakeup ONE on a channel [User Program]
+run tstChanOneSlave - Slave program of tst_chan_one [User Program]
+run mergesort - mergesort a fixed size array of 800000 [User Program]
+run tst_syscalls_1 - Tests correct handling of 3 system calls [User Program]
+run tst_syscalls_2 - Tests correct validation of syscalls params [User Program]
+run tsc2_slave1 - Slave program for tst_syscalls_2 [User Program]
+run tsc2_slave2 - Slave program for tst_syscalls_2 [User Program]
+run tsc2_slave3 - Slave program for tst_syscalls_2 [User Program]
+run fib_memomize -  [User Program]
+run fib_loop -  [User Program]
+run matops - Matrix Operations on two square matrices with NO memory leakage [User Program]
+run tpplru1 - LRU Approx: tests page placement in case the active list is not FULL [User Program]
+run tpplru2 - LRU Approx: tests page placement in case the active list is FULL, and the second active list is NOT FULL [User Program]
+run tpplru3 - LRU Approx: tests page faults on pages already exist in the second active list (ACCESS) [User Program]
+run tm1 - tests malloc (1): start address & allocated frames [User Program]
+run tm2 - tests malloc (2): writing & reading values in allocated spaces [User Program]
+run tm3 - tests malloc (3): check memory allocation and WS after accessing [User Program]
+run tf1 - tests free (1): freeing tables, WS and page file [placement case] [User Program]
+run tf1_slave1 - tests free (1) slave1: try accessing values in freed spaces [User Program]
+run tf1_slave2 - tests free (1) slave2: try accessing values in freed spaces that is not accessed before [User Program]
+run tf2 - tests free (2): try accessing values in freed spaces [User Program]
+run tff1 - tests first fit (1): always find suitable space [User Program]
+run tff2 - tests first fit (2): no suitable space [User Program]
+run tpp - Tests the Page placement [User Program]
+run tia - tests handling of invalid memory access [User Program]
+run tia_slave1 - tia: access kernel [User Program]
+run tia_slave2 - tia: write on read only user page [User Program]
+run tia_slave3 - tia: access an unmarked (non-reserved) user heap page [User Program]
+run tia_slave4 - tia: access a non-exist page in page file, stack and heap [User Program]
+run dummy_process - [Slave program] contains nested loops with random bounds to consume time [User Program]
+run tsem1 - Tests the Semaphores only [critical section & dependency] [User Program]
+run sem1Slave - [Slave program] of tst_semaphore_1master [User Program]
+run tsem2 - Tests the Semaphores only [multiprograms enter the same CS] [User Program]
+run sem2Slave - [Slave program] of tst_semaphore_2master [User Program]
+run tff3 - tests first fit (3): malloc, smalloc & sget [User Program]
+run tshr1 - Tests the shared variables [create] [User Program]
+run tshr2 - Tests the shared variables [create, get and perms] [User Program]
+run shr2Slave1 - [Slave program1] of tst_sharing_2master [User Program]
+run shr2Slave2 - [Slave program2] of tst_sharing_2master [User Program]
+run tshr3 - Tests the shared variables [Special cases of create] [User Program]
+run fact - Factorial Recursive [User Program]
+run fib - Fibonacci Recursive [User Program]
+run qs1 - Quicksort with NO memory leakage [User Program]
+run qs2 - Quicksort that cause memory leakage [User Program]
+run ms1 - Mergesort with NO memory leakage [User Program]
+run ms2 - Mergesort that cause memory leakage [User Program]
+run arrop - Apply set of array operations: scenario program to test shared objects [User Program]
+run slave_qs - SlaveOperation: quicksort [User Program]
+run slave_ms - SlaveOperation: mergesort [User Program]
+run slave_stats - SlaveOperation: stats [User Program]
+run tair -  [User Program]
+run taircl -  [User Program]
+run taircu -  [User Program]
+run midterm - Midterm 2017: Example on shared resource and dependency [User Program]
+run midterm_a - Midterm 2017 Example: Process A [User Program]
+run midterm_b - Midterm 2017 Example: Process B [User Program]
+run tshr4 - Tests the free of shared variables after createSharedObject only [User Program]
+run tshr5 - Tests the free of shared variables after both createSharedObject and getSharedObject [User Program]
+run tshr5slave - Slave program to be used with tshr5 [User Program]
+run tshr5slaveB1 - Slave program to be used with tshr5 [User Program]
+run tshr5slaveB2 - Slave program to be used with tshr5 [User Program]
+run tf3 - tests free (3): freeing buffers, tables, WS and page file [REplacement case] [User Program]
+FOS> run tst_chan_one 100
 
-Environment Id= 4096
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 201000, used= 1, modified= 0, buffered= 0, time stamp= 0 <--
-address @ 2 = 202000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 3 = 203000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 4 = 204000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 5 = 205000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 6 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 7 = 801000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 202000, used= 1, modified= 0, buffered= 0, time stamp= 0 <--
-address @ 3 = 203000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 4 = 204000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 5 = 205000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 6 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 7 = 801000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 3 = 203000, used= 1, modified= 0, buffered= 0, time stamp= 0 <--
-address @ 4 = 204000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 5 = 205000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 6 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 7 = 801000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 204000, used= 1, modified= 0, buffered= 0, time stamp= 0 <--
-address @ 5 = 205000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 6 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 7 = 801000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 5 = 205000, used= 1, modified= 0, buffered= 0, time stamp= 0 <--
-address @ 6 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 0
-address @ 7 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 0
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 6 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 0 <--
-address @ 7 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 0
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 7 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 0 <--
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 80e000, used= 1, modified= 0, buffered= 0, time stamp= 80000000 <--
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000 <--
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 80000000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 80000000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 80001000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 80000000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 80001000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 80002000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 805000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 80000000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 80001000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 80002000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 4 = 80003000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-EMPTY LOCATION	     	     <--
-EMPTY LOCATION
-EMPTY LOCATION
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-EMPTY LOCATION	     	     <--
-EMPTY LOCATION
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-EMPTY LOCATION	     	     <--
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 809000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 5 = 806000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 809000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 80a000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 6 = 807000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 809000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 80a000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 80b000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 7 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000 <--
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 809000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 80a000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 80b000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 80c000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 809000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 80a000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 80b000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 80c000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 8 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 801000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 1 = 808000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 809000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 80a000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 80b000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 80c000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 8 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = eebfd000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 2 = 803000, used= 1, modified= 1, buffered= 0, time stamp= 80000000 <--
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 4 = 809000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 80a000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 80b000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 80c000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 8 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
--=====================================================
----------------------------------------------------
-PAGE WS:
-address @ 0 = 801000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 1 = eebfd000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 2 = 80f000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
-address @ 3 = 804000, used= 1, modified= 0, buffered= 0, time stamp= 80000000 <--
-address @ 4 = 809000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 5 = 80a000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 6 = 80b000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 7 = 80c000, used= 1, modified= 1, buffered= 0, time stamp= 80000000
-address @ 8 = 800000, used= 1, modified= 0, buffered= 0, time stamp= 80000000
--=====================================================
+Environment Id= 16

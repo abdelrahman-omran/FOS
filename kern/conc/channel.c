@@ -30,9 +30,27 @@ void sleep(struct Channel *chan, struct spinlock* lk)
 {
 	//TODO: [PROJECT'24.MS1 - #10] [4] LOCKS - sleep
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("sleep is not implemented yet");
+	//panic("sleep is not implemented yet");
 	//Your Code is Here...
 
+	// acquire the lock of all queues
+	acquire_spinlock(&(ProcessQueues.qlock));
+	// Release the guard lock before sleeping
+	release_spinlock(lk);
+
+	struct Env *env = LIST_FIRST(&(chan->queue));
+	//cprint(chan->name);
+	env->channel = chan;
+	env->env_status = ENV_BLOCKED;
+
+	// Yield the processor to let the scheduler run another environment
+	sched();
+
+	env->channel = 0;
+	// release the lock of all queues
+	release_spinlock(&(ProcessQueues.qlock));
+	// After waking up, reacquire the original lock
+	acquire_spinlock(lk);
 }
 
 //==================================================
@@ -46,8 +64,20 @@ void wakeup_one(struct Channel *chan)
 {
 	//TODO: [PROJECT'24.MS1 - #11] [4] LOCKS - wakeup_one
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("wakeup_one is not implemented yet");
+	//panic("wakeup_one is not implemented yet");
 	//Your Code is Here...
+	acquire_spinlock(&(ProcessQueues.qlock));
+	if (queue_size(&(chan->queue)) > 0) {
+	        // dequeue one process
+	        struct Env *env = dequeue(&(chan->queue));
+	        // mark the environment as ready
+	        env->env_status = ENV_READY;
+	        // clear the channel pointer as it's no longer blocked on it
+	        env->channel = 0;
+	        // insert process into ready queue
+	        sched_insert_ready0(env);
+	}
+	release_spinlock(&(ProcessQueues.qlock));
 }
 
 //====================================================
@@ -62,8 +92,22 @@ void wakeup_all(struct Channel *chan)
 {
 	//TODO: [PROJECT'24.MS1 - #12] [4] LOCKS - wakeup_all
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("wakeup_all is not implemented yet");
+	//panic("wakeup_all is not implemented yet");
 	//Your Code is Here...
+	struct Env *p;
+	struct Env *env;
+	LIST_FOREACH(env, &(chan->queue)){
+		p = get_cpu_proc();
+		if(env != p){
+			acquire_spinlock(&(ProcessQueues.qlock));
+			if(env->env_status == ENV_BLOCKED && env->channel == chan){
+				env->env_status = ENV_READY;
+				sched_insert_ready0(env);
+			}
+			release_spinlock(&(ProcessQueues.qlock));
+		}
+	}
 
 }
+
 
