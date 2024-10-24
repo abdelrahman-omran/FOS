@@ -35,18 +35,20 @@ void sleep(struct Channel *chan, struct spinlock* lk)
 
 	// acquire the lock of all queues
 	acquire_spinlock(&(ProcessQueues.qlock));
-	// Release the guard lock before sleeping
-	release_spinlock(lk);
 
-	struct Env *env = LIST_FIRST(&(chan->queue));
+	struct Env *env = get_cpu_proc();
 	//cprint(chan->name);
 	env->channel = chan;
 	env->env_status = ENV_BLOCKED;
+	enqueue(&(chan->queue), env);
+
+	// Release the guard lock to allow other processes to acquire sleeplock
+	release_spinlock(lk);
 
 	// Yield the processor to let the scheduler run another environment
 	sched();
 
-	env->channel = 0;
+	// now this process is returning
 	// release the lock of all queues
 	release_spinlock(&(ProcessQueues.qlock));
 	// After waking up, reacquire the original lock
@@ -73,7 +75,7 @@ void wakeup_one(struct Channel *chan)
 	        // mark the environment as ready
 	        env->env_status = ENV_READY;
 	        // clear the channel pointer as it's no longer blocked on it
-	        env->channel = 0;
+	        env->channel = NULL;
 	        // insert process into ready queue
 	        sched_insert_ready0(env);
 	}
@@ -94,18 +96,9 @@ void wakeup_all(struct Channel *chan)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("wakeup_all is not implemented yet");
 	//Your Code is Here...
-	struct Env *p;
-	struct Env *env;
-	LIST_FOREACH(env, &(chan->queue)){
-		p = get_cpu_proc();
-		if(env != p){
-			acquire_spinlock(&(ProcessQueues.qlock));
-			if(env->env_status == ENV_BLOCKED && env->channel == chan){
-				env->env_status = ENV_READY;
-				sched_insert_ready0(env);
-			}
-			release_spinlock(&(ProcessQueues.qlock));
-		}
+	while(queue_size(&(chan->queue))){
+		// ps: wakeup_one acquires the processesQueue Lock
+		wakeup_one(chan);
 	}
 
 }
