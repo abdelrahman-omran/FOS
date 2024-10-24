@@ -301,7 +301,12 @@ int sys_pf_calculate_allocated_pages(void)
 /*******************************/
 void sys_free_user_mem(uint32 virtual_address, uint32 size)
 {
-	if(isBufferingEnabled())
+	if(virtual_address < USER_HEAP_START || (virtual_address + size) >= USER_HEAP_MAX ||virtual_address == 0 )
+	{
+		env_exit();
+	}
+
+	else if(isBufferingEnabled())
 	{
 		__free_user_mem_with_buffering(cur_env, virtual_address, size);
 	}
@@ -315,6 +320,17 @@ void sys_free_user_mem(uint32 virtual_address, uint32 size)
 void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 {
 	//TODO: [PROJECT'24.MS1 - #03] [2] SYSTEM CALLS - Params Validation
+	
+
+	if(virtual_address == 0)
+	{
+		env_exit();
+	}
+	if(virtual_address < USER_HEAP_START || (virtual_address + size) >= USER_HEAP_MAX )
+	{
+		env_exit();
+	}
+
 
 	allocate_user_mem(cur_env, virtual_address, size);
 	return;
@@ -506,7 +522,17 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	switch(syscallno)
 	{
 	//TODO: [PROJECT'24.MS1 - #02] [2] SYSTEM CALLS - Add suitable code here
-
+	case SYS_sbrk:
+     	return (int) sys_sbrk( (int) a1 );
+	 	break;
+ 	case SYS_free_user_mem:
+		sys_free_user_mem(a1 , a2);
+		return 0;
+		break;
+	case SYS_allocate_user_mem:
+		sys_allocate_user_mem(a1 , a2);
+		return 0;
+		break;
 	//======================================================================
 	case SYS_cputs:
 		sys_cputs((const char*)a1,a2,(uint8)a3);
