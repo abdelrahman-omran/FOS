@@ -105,16 +105,16 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	uint32 *stAdress = (uint32 *)daStart;
 	uint32 *edAdress = (uint32 *)(daStart + initSizeOfAllocatedSpace - sizeof(uint32));
 
-	*stAdress =  1; 
-	*edAdress = 1; 
+	*stAdress =  1;
+	*edAdress = 1;
 
 	uint32 totalSize = initSizeOfAllocatedSpace - 2 * sizeof(uint32);
 
-	uint32 *first_free_block = (uint32 *)(stAdress + 1); 
-	*first_free_block = totalSize ;						 
+	uint32 *first_free_block = (uint32 *)(stAdress + 1);
+	*first_free_block = totalSize ;
 
 	uint32 *blkFooter = (uint32 *)((uint32)first_free_block + totalSize - sizeof(uint32));
-	*blkFooter = totalSize ; 
+	*blkFooter = totalSize ;
 
 	LIST_INIT(&freeBlocksList);
 	struct BlockElement *freeBlock = (struct BlockElement *)(first_free_block + 1);
@@ -126,7 +126,7 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 void set_block_data(void *va, uint32 totalSize, bool isAllocated)
 {
 	uint32 *hptr = (uint32 *)va-1;
-	
+
 	*hptr = totalSize ;
 	if(isAllocated) *hptr|=1;
 
@@ -147,7 +147,7 @@ void *alloc_block_FF(uint32 size)
 		//==================================================================================
 	// DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
-	
+
 	if (size % 2 != 0)
 		size++; // ensure that the size is even (to use LSB as allocation flag)
 	if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
@@ -160,40 +160,40 @@ void *alloc_block_FF(uint32 size)
 		uint32 da_break = (uint32)sbrk(0);
 		initialize_dynamic_allocator(da_start, da_break - da_start);
 	}
-	
+
 	//==================================================================================
 	//==================================================================================
 
 	if (size == 0) return NULL;
-	
+
 		uint32 effectiveSize = size + 8;
 		struct BlockElement *blk;
 		LIST_FOREACH(blk, &freeBlocksList)
 		{
 
-			uint32 blkSize = get_block_size(blk); 
+			uint32 blkSize = get_block_size(blk);
 			if (blkSize >= effectiveSize){
-				
-				
+
+
 				if(blkSize - effectiveSize >= 16){
                     struct BlockElement *newFreeBlock = (struct BlockElement *)((char *)blk + effectiveSize );
                     uint32 newBlockSize = blkSize - effectiveSize;
-                    set_block_data(newFreeBlock, newBlockSize, 0); 
+                    set_block_data(newFreeBlock, newBlockSize, 0);
                     LIST_INSERT_AFTER(&freeBlocksList, blk, newFreeBlock);
-				}		
+				}
 				else{
 					effectiveSize = blkSize;
 				}
                     set_block_data(blk,effectiveSize,1);
                     LIST_REMOVE(&freeBlocksList, blk);
-                    return (void *)((char *)blk  ); 
-			
+                    return (void *)((char *)blk  );
+
 			}
 		}
 
         void *newBlock = sbrk(effectiveSize);
         if (get_block_size(newBlock)<effectiveSize) return NULL;
-		else return (void *)((char *)newBlock); 
+		else return (void *)((char *)newBlock);
 
 }
 //=========================================
@@ -215,19 +215,19 @@ void  free_block(void *va) {
     if (va == NULL) {
         return; // Cannot free a NULL pointer
     }
-	
+
 	if(is_free_block(va)) return;
 
 	uint32 blkSize = get_block_size(va);
-	set_block_data(va , blkSize , 0) ; 
+	set_block_data(va , blkSize , 0) ;
 
 
 	struct BlockElement *blk ;
 	struct BlockElement *v = va ;
 
-	uint32 listSize = LIST_SIZE(&freeBlocksList) ; 
+	uint32 listSize = LIST_SIZE(&freeBlocksList) ;
 	if(listSize == 0 || v<LIST_FIRST(&freeBlocksList)){
-		LIST_INSERT_HEAD(&freeBlocksList , v) ; 
+		LIST_INSERT_HEAD(&freeBlocksList , v) ;
 	}
 	else if(v>LIST_LAST(&freeBlocksList)){
 		LIST_INSERT_TAIL(&freeBlocksList,v);
@@ -274,8 +274,22 @@ void *realloc_block_FF(void* va, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("realloc_block_FF is not implemented yet");
+	//panic("realloc_block_FF is not implemented yet");
 	//Your Code is Here...
+
+	// -- Handle edge cases --
+	if(va == NULL){
+		if(new_size != 0){
+			return alloc_block_FF(new_size);
+		}
+		return NULL;
+	}
+	if(new_size == 0){
+		free_block(va);
+		return NULL;
+	}
+	return NULL;
+	// -----------------------
 }
 
 /*********************************************************************************************/
