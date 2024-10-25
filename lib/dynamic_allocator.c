@@ -123,12 +123,18 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 //==================================
 // [2] SET BLOCK HEADER & FOOTER:
 //==================================
-void set_block_data(void* va, uint32 totalSize, bool isAllocated)
+void set_block_data(void *va, uint32 totalSize, bool isAllocated)
 {
-	//TODO: [PROJECT'24.MS1 - #05] [3] DYNAMIC ALLOCATOR - set_block_data
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("set_block_data is not implemented yet");
-	//Your Code is Here...
+	uint32 *hptr = (uint32 *)va-1;
+	
+	*hptr = totalSize ;
+	if(isAllocated) *hptr|=1;
+
+	uint32 tail = (uint32)va + totalSize - 2*(sizeof(uint32));
+	uint32 *tptr = (uint32 *)tail;
+
+	*tptr = totalSize ;
+	if(isAllocated)*tptr|=1;
 }
 
 
