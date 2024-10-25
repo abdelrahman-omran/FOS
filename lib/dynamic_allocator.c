@@ -143,21 +143,59 @@ void set_block_data(void *va, uint32 totalSize, bool isAllocated)
 //=========================================
 void *alloc_block_FF(uint32 size)
 {
+
+		//==================================================================================
+	// DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
-	//DON'T CHANGE THESE LINES==========================================================
-	//==================================================================================
+	
+	if (size % 2 != 0)
+		size++; // ensure that the size is even (to use LSB as allocation flag)
+	if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
+
+		size = DYN_ALLOC_MIN_BLOCK_SIZE;
+	if (!is_initialized)
 	{
-		if (size % 2 != 0) size++;	//ensure that the size is even (to use LSB as allocation flag)
-		if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
-			size = DYN_ALLOC_MIN_BLOCK_SIZE ;
-		if (!is_initialized)
-		{
-			uint32 required_size = size + 2*sizeof(int) /*header & footer*/ + 2*sizeof(int) /*da begin & end*/ ;
-			uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE)/PAGE_SIZE);
-			uint32 da_break = (uint32)sbrk(0);
-			initialize_dynamic_allocator(da_start, da_break - da_start);
-		}
+		uint32 required_size = size + 2 * sizeof(int) + 2 * sizeof(int);
+		uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE) / PAGE_SIZE);
+		uint32 da_break = (uint32)sbrk(0);
+		initialize_dynamic_allocator(da_start, da_break - da_start);
 	}
+	
+	//==================================================================================
+	//==================================================================================
+
+	if (size == 0) return NULL;
+	
+		uint32 effectiveSize = size + 8;
+		struct BlockElement *blk;
+		LIST_FOREACH(blk, &freeBlocksList)
+		{
+
+			uint32 blkSize = get_block_size(blk); 
+			if (blkSize >= effectiveSize){
+				
+				
+				if(blkSize - effectiveSize >= 16){
+                    struct BlockElement *newFreeBlock = (struct BlockElement *)((char *)blk + effectiveSize );
+                    uint32 newBlockSize = blkSize - effectiveSize;
+                    set_block_data(newFreeBlock, newBlockSize, 0); 
+                    LIST_INSERT_AFTER(&freeBlocksList, blk, newFreeBlock);
+				}		
+				else{
+					effectiveSize = blkSize;
+				}
+                    set_block_data(blk,effectiveSize,1);
+                    LIST_REMOVE(&freeBlocksList, blk);
+                    return (void *)((char *)blk  ); 
+			
+			}
+		}
+
+        void *newBlock = sbrk(effectiveSize);
+        if (get_block_size(newBlock)<effectiveSize) return NULL;
+		else return (void *)((char *)newBlock); 
+
+}
 	//==================================================================================
 	//==================================================================================
 
