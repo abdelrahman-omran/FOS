@@ -196,15 +196,6 @@ void *alloc_block_FF(uint32 size)
 		else return (void *)((char *)newBlock); 
 
 }
-	//==================================================================================
-	//==================================================================================
-
-	//TODO: [PROJECT'24.MS1 - #06] [3] DYNAMIC ALLOCATOR - alloc_block_FF
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_FF is not implemented yet");
-	//Your Code is Here...
-
-}
 //=========================================
 // [4] ALLOCATE BLOCK BY BEST FIT:
 //=========================================
@@ -220,14 +211,62 @@ void *alloc_block_BF(uint32 size)
 //===================================================
 // [5] FREE BLOCK WITH COALESCING:
 //===================================================
-void free_block(void *va)
-{
-	//TODO: [PROJECT'24.MS1 - #07] [3] DYNAMIC ALLOCATOR - free_block
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("free_block is not implemented yet");
-	//Your Code is Here...
-}
+void  free_block(void *va) {
+    if (va == NULL) {
+        return; // Cannot free a NULL pointer
+    }
+	
+	if(is_free_block(va)) return;
 
+	uint32 blkSize = get_block_size(va);
+	set_block_data(va , blkSize , 0) ; 
+
+
+	struct BlockElement *blk ;
+	struct BlockElement *v = va ;
+
+	uint32 listSize = LIST_SIZE(&freeBlocksList) ; 
+	if(listSize == 0 || v<LIST_FIRST(&freeBlocksList)){
+		LIST_INSERT_HEAD(&freeBlocksList , v) ; 
+	}
+	else if(v>LIST_LAST(&freeBlocksList)){
+		LIST_INSERT_TAIL(&freeBlocksList,v);
+	}
+	else{
+
+		LIST_FOREACH(blk,&freeBlocksList){
+			if(v>blk && v<LIST_NEXT(blk)){
+				LIST_INSERT_AFTER(&freeBlocksList,blk,v);
+			}
+		}
+	}
+
+
+	// merge with next
+	uint32 *curBlkMetaData1 = ((uint32 *)va + blkSize -1) ;
+    uint32 freeNxt = is_free_block((void*)va +blkSize) ;
+    uint32 nxtSize =  get_block_size((void*)va +blkSize);
+
+    if(freeNxt){
+	struct BlockElement *nxtBlock = LIST_NEXT(v);
+	LIST_REMOVE(&freeBlocksList,nxtBlock );
+	blkSize+=nxtSize;
+    set_block_data(v , blkSize , 0) ;
+    }
+
+	// merge with prev
+
+	uint32 *curBlkMetaData = ((uint32 *)va - 2) ;
+	uint32 freePrev= (~(*curBlkMetaData) & 0x1);
+	uint32 prevSize =  (*curBlkMetaData) & ~(0x1);
+
+	if(freePrev){
+	struct BlockElement *newBlock = LIST_PREV(v);
+	LIST_REMOVE(&freeBlocksList,v);
+	set_block_data(newBlock , prevSize+blkSize , 0) ;
+	}
+
+}
 //=========================================
 // [6] REALLOCATE BLOCK BY FIRST FIT:
 //=========================================
