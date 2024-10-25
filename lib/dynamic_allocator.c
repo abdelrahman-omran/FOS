@@ -90,22 +90,35 @@ bool is_initialized = 0;
 void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpace)
 {
 	//==================================================================================
-	//DON'T CHANGE THESE LINES==========================================================
+	// DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
 	{
-		if (initSizeOfAllocatedSpace % 2 != 0) initSizeOfAllocatedSpace++; //ensure it's multiple of 2
+		if (initSizeOfAllocatedSpace % 2 != 0)
+			initSizeOfAllocatedSpace++; // ensure it's multiple of 2
 		if (initSizeOfAllocatedSpace == 0)
-			return ;
+			return;
 		is_initialized = 1;
 	}
 	//==================================================================================
 	//==================================================================================
 
-	//TODO: [PROJECT'24.MS1 - #04] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("initialize_dynamic_allocator is not implemented yet");
-	//Your Code is Here...
+	uint32 *stAdress = (uint32 *)daStart;
+	uint32 *edAdress = (uint32 *)(daStart + initSizeOfAllocatedSpace - sizeof(uint32));
 
+	*stAdress =  1; 
+	*edAdress = 1; 
+
+	uint32 totalSize = initSizeOfAllocatedSpace - 2 * sizeof(uint32);
+
+	uint32 *first_free_block = (uint32 *)(stAdress + 1); 
+	*first_free_block = totalSize ;						 
+
+	uint32 *blkFooter = (uint32 *)((uint32)first_free_block + totalSize - sizeof(uint32));
+	*blkFooter = totalSize ; 
+
+	LIST_INIT(&freeBlocksList);
+	struct BlockElement *freeBlock = (struct BlockElement *)(first_free_block + 1);
+	LIST_INSERT_HEAD(&freeBlocksList, freeBlock);
 }
 //==================================
 // [2] SET BLOCK HEADER & FOOTER:
