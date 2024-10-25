@@ -270,27 +270,77 @@ void  free_block(void *va) {
 //=========================================
 // [6] REALLOCATE BLOCK BY FIRST FIT:
 //=========================================
-void *realloc_block_FF(void* va, uint32 new_size)
-{
-	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	//panic("realloc_block_FF is not implemented yet");
-	//Your Code is Here...
+void *realloc_block_FF(void *va, uint32 new_size) {
+    // TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
+    // COMMENT THE FOLLOWING LINE BEFORE START CODING
+    // panic("realloc_block_FF is not implemented yet");
+    // Your Code is Here...
 
-	// -- Handle edge cases --
-	if(va == NULL){
-		if(new_size != 0){
-			return alloc_block_FF(new_size);
-		}
-		return NULL;
-	}
-	if(new_size == 0){
-		free_block(va);
-		return NULL;
-	}
-	return NULL;
-	// -----------------------
+    // -- Handle edge cases --
+    if (va == NULL) {
+        if (new_size != 0) {
+            return alloc_block_FF(new_size);
+        }
+        return NULL;
+    }
+    if (new_size == 0) {
+        free_block(va);
+        return NULL;
+    }
+    // -----------------------
+    uint32 old_size = (uint32)(va - 1);
+    if (new_size > old_size) {
+        uint32 next_block_size = get_block_size((va + old_size));
+        // if next block is free and can accomodate new size -> merge
+        if (is_free_block((va + old_size)) && (next_block_size + old_size >= new_size)) {
+            uint32 rem_size = next_block_size + old_size - new_size;
+            if (rem_size < 16) {
+                set_block_data(va, next_block_size + old_size, 1);
+            } else {
+                set_block_data(va, new_size, 1);
+                set_block_data(va + new_size, rem_size, 0);
+                free_block((va + new_size));
+            }
+            return va;
+        } else {
+            // need to move the block to a bigger one
+            void *new_block = alloc_block_FF(new_size);
+            if (new_block == NULL)
+                return NULL;
+            //
+            free_block(va);
+            return new_block;
+        }
+    } else if (new_size < old_size) {
+        // is next block free? -> colesce
+        if (is_free_block((va + old_size))) {
+            // resize old block
+            set_block_data(va, new_size, 1);
+            // set extra space to a free block
+            set_block_data((va + new_size), (old_size - new_size), 0);
+            // free new block and add to free list
+            free_block((va + new_size));
+        } else {
+            // if remaining diff can't create a new block -> no resize
+            if ((new_size - old_size) < 16) {
+                return va;
+            }
+            // else: separate block, and free extra space
+            else {
+                // resize old block
+                set_block_data(va, new_size, 1);
+                // set extra space to a free block
+                set_block_data((va + new_size), (old_size - new_size), 0);
+                // free new block and add to free list
+                free_block((va + new_size));
+            }
+        }
+    } else {
+        return va;
+    }
+    return NULL;
 }
+
 
 /*********************************************************************************************/
 /*********************************************************************************************/
