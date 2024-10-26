@@ -105,16 +105,16 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	uint32 *stAdress = (uint32 *)daStart;
 	uint32 *edAdress = (uint32 *)(daStart + initSizeOfAllocatedSpace - sizeof(uint32));
 
-	*stAdress =  1; 
-	*edAdress = 1; 
+	*stAdress =  1;
+	*edAdress = 1;
 
 	uint32 totalSize = initSizeOfAllocatedSpace - 2 * sizeof(uint32);
 
-	uint32 *first_free_block = (uint32 *)(stAdress + 1); 
-	*first_free_block = totalSize ;						 
+	uint32 *first_free_block = (uint32 *)(stAdress + 1);
+	*first_free_block = totalSize ;
 
 	uint32 *blkFooter = (uint32 *)((uint32)first_free_block + totalSize - sizeof(uint32));
-	*blkFooter = totalSize ; 
+	*blkFooter = totalSize ;
 
 	LIST_INIT(&freeBlocksList);
 	struct BlockElement *freeBlock = (struct BlockElement *)(first_free_block + 1);
@@ -126,7 +126,7 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 void set_block_data(void *va, uint32 totalSize, bool isAllocated)
 {
 	uint32 *hptr = (uint32 *)va-1;
-	
+
 	*hptr = totalSize ;
 	if(isAllocated) *hptr|=1;
 
@@ -147,7 +147,7 @@ void *alloc_block_FF(uint32 size)
 		//==================================================================================
 	// DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
-	
+
 	if (size % 2 != 0)
 		size++; // ensure that the size is even (to use LSB as allocation flag)
 	if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
@@ -160,40 +160,40 @@ void *alloc_block_FF(uint32 size)
 		uint32 da_break = (uint32)sbrk(0);
 		initialize_dynamic_allocator(da_start, da_break - da_start);
 	}
-	
+
 	//==================================================================================
 	//==================================================================================
 
 	if (size == 0) return NULL;
-	
+
 		uint32 effectiveSize = size + 8;
 		struct BlockElement *blk;
 		LIST_FOREACH(blk, &freeBlocksList)
 		{
 
-			uint32 blkSize = get_block_size(blk); 
+			uint32 blkSize = get_block_size(blk);
 			if (blkSize >= effectiveSize){
-				
-				
+
+
 				if(blkSize - effectiveSize >= 16){
                     struct BlockElement *newFreeBlock = (struct BlockElement *)((char *)blk + effectiveSize );
                     uint32 newBlockSize = blkSize - effectiveSize;
-                    set_block_data(newFreeBlock, newBlockSize, 0); 
+                    set_block_data(newFreeBlock, newBlockSize, 0);
                     LIST_INSERT_AFTER(&freeBlocksList, blk, newFreeBlock);
-				}		
+				}
 				else{
 					effectiveSize = blkSize;
 				}
                     set_block_data(blk,effectiveSize,1);
                     LIST_REMOVE(&freeBlocksList, blk);
-                    return (void *)((char *)blk  ); 
-			
+                    return (void *)((char *)blk  );
+
 			}
 		}
 
         void *newBlock = sbrk(effectiveSize);
         if (get_block_size(newBlock)<effectiveSize) return NULL;
-		else return (void *)((char *)newBlock); 
+		else return (void *)((char *)newBlock);
 
 }
 //=========================================
@@ -215,19 +215,19 @@ void  free_block(void *va) {
     if (va == NULL) {
         return; // Cannot free a NULL pointer
     }
-	
+
 	if(is_free_block(va)) return;
 
 	uint32 blkSize = get_block_size(va);
-	set_block_data(va , blkSize , 0) ; 
+	set_block_data(va , blkSize , 0) ;
 
 
 	struct BlockElement *blk ;
 	struct BlockElement *v = va ;
 
-	uint32 listSize = LIST_SIZE(&freeBlocksList) ; 
+	uint32 listSize = LIST_SIZE(&freeBlocksList) ;
 	if(listSize == 0 || v<LIST_FIRST(&freeBlocksList)){
-		LIST_INSERT_HEAD(&freeBlocksList , v) ; 
+		LIST_INSERT_HEAD(&freeBlocksList , v) ;
 	}
 	else if(v>LIST_LAST(&freeBlocksList)){
 		LIST_INSERT_TAIL(&freeBlocksList,v);
@@ -270,13 +270,96 @@ void  free_block(void *va) {
 //=========================================
 // [6] REALLOCATE BLOCK BY FIRST FIT:
 //=========================================
-void *realloc_block_FF(void* va, uint32 new_size)
-{
-	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("realloc_block_FF is not implemented yet");
-	//Your Code is Here...
+void *realloc_block_FF(void *va, uint32 new_size) {
+    // TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
+    // COMMENT THE FOLLOWING LINE BEFORE START CODING
+    // panic("realloc_block_FF is not implemented yet");
+    // Your Code is Here...
+
+    // -- Handle edge cases --
+    if (va == NULL) {
+        if (new_size != 0) {
+            return alloc_block_FF(new_size);
+        }
+        return NULL;
+    }
+    if (new_size == 0) {
+        free_block(va);
+        return NULL;
+    }
+    // -----------------------
+    uint32 old_size = get_block_size(va);
+    new_size+=8;
+    if (new_size > old_size) {
+        uint32 next_block_size = get_block_size((void*)((uint32)va + old_size));
+        // if next block is free and can accommodate new size -> merge
+        cprintf("Because: %d + %d >= %d \n", next_block_size, old_size, new_size);
+        if (is_free_block((uint32 *)va + old_size) && (next_block_size + old_size >= new_size)) {
+        	cprintf("no need to relocate\n");
+            uint32 rem_size = next_block_size + old_size - new_size;
+            if (rem_size < 16) {
+                set_block_data(va, next_block_size + old_size, 1);
+                LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
+            } else {
+            	// remove old free block from list
+            	set_block_data((void*)((uint32)va + old_size), next_block_size, 1);
+            	LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
+            	//
+                set_block_data(va, new_size, 1);
+                set_block_data((void*)((uint32)va + new_size), rem_size, 1);
+                free_block((void*)((uint32)va + new_size));
+            }
+            return va;
+        } else {
+            // need to move the block to a bigger one
+        	cprintf("relocate to a bigger block\n");
+            void *new_block = alloc_block_FF(new_size);
+            if (new_block == NULL)
+                return NULL;
+            //
+            free_block(va);
+            return new_block;
+        }
+    } else if (new_size < old_size) {
+    	if(new_size < 16){
+    		return NULL;
+    	}
+        // is next block free? -> coalesce
+        if (is_free_block((void*)((uint32)va + old_size))) {
+            // resize old block
+            set_block_data(va, new_size, 1);
+            // set extra space to a free block
+            set_block_data((void*)((uint32)va + new_size), (old_size - new_size), 1);
+            // free new block and add to free list
+            free_block((void*)((uint32)va + new_size));
+        }
+        else {
+        	cprintf("NO coalesce, address is: %x \n", va);
+            // if remaining diff can't create a new block ->
+        	// no resize | search for a smaller free block (TODO check if needed)
+            if ((old_size - new_size) < 16) {
+            	1;
+            }
+            // else: separate block, and free extra space
+            else {
+                // resize old block
+                set_block_data(va, new_size, 1);
+                // set extra space to a free block
+                set_block_data((void*)((uint32)va + new_size), (old_size - new_size), 1);
+                // free new block and add to free list
+                free_block((void*)((uint32)va + new_size));
+            }
+            return va;
+        }
+    }
+    else {
+    	// new size == old size
+        return va;
+    }
+
+    return NULL;
 }
+
 
 /*********************************************************************************************/
 /*********************************************************************************************/
