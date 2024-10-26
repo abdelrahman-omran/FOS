@@ -453,16 +453,88 @@ int execute_command(char *command_string)
 }
 
 
-int process_command(int number_of_arguments, char** arguments)
+int process_command(int number_of_arguments, char **arguments)
 {
-	//TODO: [PROJECT'24.MS1 - #01] [1] PLAY WITH CODE! - process_command
-
-	for (int i = 0; i < NUM_OF_COMMANDS; i++)
+	int sizeOFFoundCommandsList = 0;
+	sizeOFFoundCommandsList = LIST_SIZE(&foundCommands);
+	if (sizeOFFoundCommandsList > 0)
 	{
-		if (strcmp(arguments[0], commands[i].name) == 0)
+		struct Command *cmd = NULL;
+		LIST_FOREACH(cmd, &foundCommands)
 		{
-			return i;
+			LIST_REMOVE(&foundCommands, (cmd));
 		}
 	}
-	return CMD_INVALID;
+	// TODO: [PROJECT'24.MS1 - #01] [1] PLAY WITH CODE! - process_command
+	for (int i = 0; i < NUM_OF_COMMANDS; i++)
+	{
+		// check name of write argument with the list
+		if (strcmp(arguments[0], commands[i].name) == 0)
+		{
+			// check if argument is +ve or 0
+			if (commands[i].num_of_args > -1)
+			{
+
+				// check if number of vaild argument = send argument
+				if (commands[i].num_of_args == number_of_arguments - 1)
+				{
+					// continue code
+
+					return i;
+				}
+				else
+				{
+					LIST_INSERT_HEAD(&foundCommands, &commands[i]);
+					// number of argument not matched
+					return CMD_INV_NUM_ARGS;
+				}
+			}
+			// if number of argument -ve then the -ve number is the smallest number should send
+			else
+			{
+				// minimumNumberOfArguments is the smallest number of argument should send
+				int minimumNumberOfArguments = -1 * commands[i].num_of_args;
+				if (number_of_arguments - 1 >= minimumNumberOfArguments)
+				{
+					return i;
+				}
+				else
+				{
+					LIST_INSERT_HEAD(&foundCommands, &commands[i]);
+					return CMD_INV_NUM_ARGS;
+				}
+			}
+		}
+	}
+
+	int indexOfWriteArgument = 0, i = 0;
+	char writeArgumentName[1024];
+	strcpy(writeArgumentName, arguments[0]);
+	char originalArgumentName[1024];
+	int found = 0;
+	// loop on all command in list and show if all letter matched return command
+	for (int j = 0; j < NUM_OF_COMMANDS; j++)
+	{
+		indexOfWriteArgument = 0;
+		i = 0;
+		strcpy(originalArgumentName, commands[j].name);
+		while (originalArgumentName[i] != '\0')
+		{
+			if (writeArgumentName[indexOfWriteArgument] == originalArgumentName[i])
+			{
+				indexOfWriteArgument++;
+			}
+			if (indexOfWriteArgument == strlen(writeArgumentName))
+			{
+				LIST_INSERT_HEAD(&foundCommands, &commands[j]);
+				found = 1;
+				break;
+			}
+			i++;
+		}
+	}
+	if (found == 1)
+		return CMD_MATCHED;
+	else
+		return CMD_INVALID;
 }
