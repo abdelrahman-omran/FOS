@@ -39,7 +39,7 @@ void acquire_sleeplock(struct sleeplock *lk)
     acquire_spinlock(&(lk->lk));
 
 	//get the current process
-	struct Env *runningProcess  = get_cpu_proc();
+	//struct Env *runningProcess  = get_cpu_proc();
 
 	while ((lk->locked == 1))
 	{
