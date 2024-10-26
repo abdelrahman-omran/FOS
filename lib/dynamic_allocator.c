@@ -201,11 +201,96 @@ void *alloc_block_FF(uint32 size)
 //=========================================
 void *alloc_block_BF(uint32 size)
 {
-	//TODO: [PROJECT'24.MS1 - BONUS] [3] DYNAMIC ALLOCATOR - alloc_block_BF
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_BF is not implemented yet");
-	//Your Code is Here...
 
+	//==================================================================================
+	// DON'T CHANGE THESE LINES==========================================================
+	//==================================================================================
+
+	if (size % 2 != 0)
+		size++; // ensure that the size is even (to use LSB as allocation flag)
+	if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
+
+		size = DYN_ALLOC_MIN_BLOCK_SIZE;
+	if (!is_initialized)
+	{
+		uint32 required_size = size + 2 * sizeof(int) + 2 * sizeof(int);
+		uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE) / PAGE_SIZE);
+		uint32 da_break = (uint32)sbrk(0);
+		initialize_dynamic_allocator(da_start, da_break - da_start);
+	}
+
+	//==================================================================================
+	//==================================================================================
+	if (size == 0)
+		return NULL;
+	uint32 effective_size = size + 8;
+	struct BlockElement *blk;
+	struct BlockElement *bestFitBlock = NULL;
+	int fitCase = 0;
+	if (effective_size < 16)
+		effective_size = 16;
+
+	LIST_FOREACH(blk, &freeBlocksList)
+	{
+		uint32 blk_size = get_block_size(blk);
+		if (blk_size == effective_size)
+		{
+			set_block_data(blk, get_block_size(blk), 1);
+			LIST_REMOVE(&freeBlocksList, blk);
+
+			return (void *)((char *)blk);
+		}
+
+		if (blk_size >= effective_size && blk_size >= 16 && bestFitBlock == NULL)
+		{
+			bestFitBlock = blk;
+			if (blk_size - effective_size >= 16)
+				fitCase = 1;
+			else
+				fitCase = 2;
+
+			continue;
+		}
+		if (blk_size >= effective_size && blk_size >= 16)
+		{
+			if (blk_size < get_block_size(bestFitBlock))
+			{
+				if (blk_size - effective_size >= 16)
+				{
+					bestFitBlock = blk;
+					fitCase = 1;
+				}
+				else
+				{
+					bestFitBlock = blk;
+					fitCase = 2;
+				}
+			}
+		}
+	}
+	if (fitCase == 0 && bestFitBlock == NULL)
+	{
+		void *new_block = sbrk(effective_size);
+		if (new_block == (void *)-1)
+			return NULL;
+	}
+	else if (fitCase == 1)
+	{
+		struct BlockElement *new_free_block = (struct BlockElement *)((char *)bestFitBlock + effective_size);
+		uint32 new_block_size = get_block_size(bestFitBlock) - effective_size;
+		set_block_data(new_free_block, new_block_size, 0);
+		LIST_INSERT_AFTER(&freeBlocksList, bestFitBlock, new_free_block);
+		set_block_data(bestFitBlock, effective_size, 1);
+		LIST_REMOVE(&freeBlocksList, bestFitBlock);
+		return (void *)((char *)bestFitBlock);
+	}
+	else if (fitCase == 2)
+	{
+		set_block_data(bestFitBlock, get_block_size(bestFitBlock), 1);
+		LIST_REMOVE(&freeBlocksList, bestFitBlock);
+		return (void *)((char *)bestFitBlock);
+	}
+	return NULL;
 }
 
 //===================================================
