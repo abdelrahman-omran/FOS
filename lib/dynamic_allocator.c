@@ -201,11 +201,122 @@ void *alloc_block_FF(uint32 size)
 //=========================================
 void *alloc_block_BF(uint32 size)
 {
-	//TODO: [PROJECT'24.MS1 - BONUS] [3] DYNAMIC ALLOCATOR - alloc_block_BF
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_BF is not implemented yet");
-	//Your Code is Here...
+		//==================================================================================
+	// DON'T CHANGE THESE LINES==========================================================
+	//==================================================================================
 
+	if (size % 2 != 0)
+		size++; // ensure that the size is even (to use LSB as allocation flag)
+	if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
+
+		size = DYN_ALLOC_MIN_BLOCK_SIZE;
+	if (!is_initialized)
+	{
+		uint32 required_size = size + 2 * sizeof(int) + 2 * sizeof(int);
+		uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE) / PAGE_SIZE);
+		uint32 da_break = (uint32)sbrk(0);
+		initialize_dynamic_allocator(da_start, da_break - da_start);
+	}
+
+	//==================================================================================
+	//==================================================================================
+	if(1==1){
+switch (size) {
+    case 0:
+        return NULL;
+
+}
+}
+
+	uint32 anaA5rSize = size + 8; 
+	struct BlockElement *eslamItrator;
+	struct BlockElement *ansabBlock = NULL;
+	int el7ala = 0;
+	if (anaA5rSize < 16)
+		anaA5rSize = 16;
+	int x = 0;
+	LIST_FOREACH(eslamItrator, &freeBlocksList)
+	{
+		uint32 ana7agmElBlock = get_block_size(eslamItrator); 
+
+int karar = 0;
+switch (1) {
+    case 1:
+if (ana7agmElBlock == anaA5rSize) {
+    karar = 1; 
+} else if (ana7agmElBlock >= anaA5rSize && ana7agmElBlock >= 16 && ansabBlock == NULL) {
+    karar = 2; 
+} else if (ana7agmElBlock >= anaA5rSize && ana7agmElBlock >= 16) {
+    if (ana7agmElBlock < get_block_size(ansabBlock)) {
+        karar = 3; 
+    }
+}
+}
+switch (karar) {
+    case 1: 
+        set_block_data(eslamItrator, get_block_size(eslamItrator), 1);
+        LIST_REMOVE(&freeBlocksList, eslamItrator);
+        return (void *)((char *)eslamItrator);
+
+    case 2: 
+	        ansabBlock = eslamItrator;
+        if (ana7agmElBlock - anaA5rSize >= 16) {
+            el7ala = 1;
+        } else {
+            el7ala = 2;
+        }
+        x++;
+        continue;
+
+    case 3: 
+        if (ana7agmElBlock < get_block_size(ansabBlock)) {
+            if (ana7agmElBlock - anaA5rSize >= 16) {
+                ansabBlock = eslamItrator;
+                el7ala = 1; 
+            } else {
+                ansabBlock = eslamItrator;
+                el7ala = 2;
+            }
+        }
+        break;
+
+}
+if(1 != 1)
+		x++;
+	}
+
+	switch (el7ala) {
+    case 0:
+        if (ansabBlock == NULL) {
+            void *testGded = sbrk(anaA5rSize);
+            if (testGded == (void *)-1) {
+                return NULL;
+            }
+        }
+        break; 
+
+    case 1: {
+        struct BlockElement *new_test = (struct BlockElement *)((char *)ansabBlock + anaA5rSize);
+        uint32 new_test_size = get_block_size(ansabBlock) - anaA5rSize;
+        set_block_data(new_test, new_test_size, 0);
+
+        LIST_INSERT_AFTER(&freeBlocksList, ansabBlock, new_test);
+        set_block_data(ansabBlock, anaA5rSize, 1); 
+        LIST_REMOVE(&freeBlocksList, ansabBlock);    
+
+        return (void *)((char *)ansabBlock);
+    }
+
+    case 2:
+        set_block_data(ansabBlock, get_block_size(ansabBlock), 1);
+        LIST_REMOVE(&freeBlocksList, ansabBlock);
+        return (void *)((char *)ansabBlock);
+
+   
+}
+
+	
+	return NULL;
 }
 
 //===================================================
