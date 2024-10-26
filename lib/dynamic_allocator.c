@@ -201,7 +201,8 @@ void *alloc_block_FF(uint32 size)
 //=========================================
 void *alloc_block_BF(uint32 size)
 {
-		//==================================================================================
+
+	//==================================================================================
 	// DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
 
@@ -220,102 +221,75 @@ void *alloc_block_BF(uint32 size)
 
 	//==================================================================================
 	//==================================================================================
-	if(1==1){
-switch (size) {
-    case 0:
-        return NULL;
+	if (size == 0)
+		return NULL;
+	uint32 effective_size = size + 8;
+	struct BlockElement *blk;
+	struct BlockElement *bestFitBlock = NULL;
+	int fitCase = 0;
+	if (effective_size < 16)
+		effective_size = 16;
 
-}
-}
-
-	uint32 anaA5rSize = size + 8; 
-	struct BlockElement *eslamItrator;
-	struct BlockElement *ansabBlock = NULL;
-	int el7ala = 0;
-	if (anaA5rSize < 16)
-		anaA5rSize = 16;
-	int x = 0;
-	LIST_FOREACH(eslamItrator, &freeBlocksList)
+	LIST_FOREACH(blk, &freeBlocksList)
 	{
-		uint32 ana7agmElBlock = get_block_size(eslamItrator); 
+		uint32 blk_size = get_block_size(blk);
+		if (blk_size == effective_size)
+		{
+			set_block_data(blk, get_block_size(blk), 1);
+			LIST_REMOVE(&freeBlocksList, blk);
 
-int karar = 0;
-switch (1) {
-    case 1:
-if (ana7agmElBlock == anaA5rSize) {
-    karar = 1; 
-} else if (ana7agmElBlock >= anaA5rSize && ana7agmElBlock >= 16 && ansabBlock == NULL) {
-    karar = 2; 
-} else if (ana7agmElBlock >= anaA5rSize && ana7agmElBlock >= 16) {
-    if (ana7agmElBlock < get_block_size(ansabBlock)) {
-        karar = 3; 
-    }
-}
-}
-switch (karar) {
-    case 1: 
-        set_block_data(eslamItrator, get_block_size(eslamItrator), 1);
-        LIST_REMOVE(&freeBlocksList, eslamItrator);
-        return (void *)((char *)eslamItrator);
+			return (void *)((char *)blk);
+		}
 
-    case 2: 
-	        ansabBlock = eslamItrator;
-        if (ana7agmElBlock - anaA5rSize >= 16) {
-            el7ala = 1;
-        } else {
-            el7ala = 2;
-        }
-        x++;
-        continue;
+		if (blk_size >= effective_size && blk_size >= 16 && bestFitBlock == NULL)
+		{
+			bestFitBlock = blk;
+			if (blk_size - effective_size >= 16)
+				fitCase = 1;
+			else
+				fitCase = 2;
 
-    case 3: 
-        if (ana7agmElBlock < get_block_size(ansabBlock)) {
-            if (ana7agmElBlock - anaA5rSize >= 16) {
-                ansabBlock = eslamItrator;
-                el7ala = 1; 
-            } else {
-                ansabBlock = eslamItrator;
-                el7ala = 2;
-            }
-        }
-        break;
-
-}
-if(1 != 1)
-		x++;
+			continue;
+		}
+		if (blk_size >= effective_size && blk_size >= 16)
+		{
+			if (blk_size < get_block_size(bestFitBlock))
+			{
+				if (blk_size - effective_size >= 16)
+				{
+					bestFitBlock = blk;
+					fitCase = 1;
+				}
+				else
+				{
+					bestFitBlock = blk;
+					fitCase = 2;
+				}
+			}
+		}
 	}
-
-	switch (el7ala) {
-    case 0:
-        if (ansabBlock == NULL) {
-            void *testGded = sbrk(anaA5rSize);
-            if (testGded == (void *)-1) {
-                return NULL;
-            }
-        }
-        break; 
-
-    case 1: {
-        struct BlockElement *new_test = (struct BlockElement *)((char *)ansabBlock + anaA5rSize);
-        uint32 new_test_size = get_block_size(ansabBlock) - anaA5rSize;
-        set_block_data(new_test, new_test_size, 0);
-
-        LIST_INSERT_AFTER(&freeBlocksList, ansabBlock, new_test);
-        set_block_data(ansabBlock, anaA5rSize, 1); 
-        LIST_REMOVE(&freeBlocksList, ansabBlock);    
-
-        return (void *)((char *)ansabBlock);
-    }
-
-    case 2:
-        set_block_data(ansabBlock, get_block_size(ansabBlock), 1);
-        LIST_REMOVE(&freeBlocksList, ansabBlock);
-        return (void *)((char *)ansabBlock);
-
-   
-}
-
-	
+	if (fitCase == 0 && bestFitBlock == NULL)
+	{
+		void *new_block = sbrk(effective_size);
+		if (new_block == (void *)-1)
+			return NULL;
+	}
+	else if (fitCase == 1)
+	{
+		struct BlockElement *new_free_block = (struct BlockElement *)((char *)bestFitBlock + effective_size);
+		uint32 new_block_size = get_block_size(bestFitBlock) - effective_size;
+		set_block_data(new_free_block, new_block_size, 0);
+		LIST_INSERT_AFTER(&freeBlocksList, bestFitBlock, new_free_block);
+		set_block_data(bestFitBlock, effective_size, 1);
+		LIST_REMOVE(&freeBlocksList, bestFitBlock);
+		return (void *)((char *)bestFitBlock);
+	}
+	else if (fitCase == 2)
+	{
+		set_block_data(bestFitBlock, get_block_size(bestFitBlock), 1);
+		LIST_REMOVE(&freeBlocksList, bestFitBlock);
+		return (void *)((char *)bestFitBlock);
+	}
 	return NULL;
 }
 
