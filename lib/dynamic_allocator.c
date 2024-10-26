@@ -293,7 +293,7 @@ void *realloc_block_FF(void *va, uint32 new_size) {
     if (new_size > old_size) {
         uint32 next_block_size = get_block_size((void*)((uint32)va + old_size));
         // if next block is free and can accommodate new size -> merge
-        cprintf("Because: %d + %d = %d \n", next_block_size, old_size, new_size);
+        cprintf("Because: %d + %d >= %d \n", next_block_size, old_size, new_size);
         if (is_free_block((uint32 *)va + old_size) && (next_block_size + old_size >= new_size)) {
         	cprintf("no need to relocate\n");
             uint32 rem_size = next_block_size + old_size - new_size;
@@ -321,37 +321,43 @@ void *realloc_block_FF(void *va, uint32 new_size) {
             return new_block;
         }
     } else if (new_size < old_size) {
-        // is next block free? -> colesce
-        if (is_free_block((va + old_size))) {
+    	if(new_size < 16){
+    		return NULL;
+    	}
+        // is next block free? -> coalesce
+        if (is_free_block((void*)((uint32)va + old_size))) {
             // resize old block
             set_block_data(va, new_size, 1);
             // set extra space to a free block
-            set_block_data((va + new_size), (old_size - new_size), 0);
+            set_block_data((void*)((uint32)va + new_size), (old_size - new_size), 1);
             // free new block and add to free list
-            free_block((va + new_size));
-        } else {
-            // if remaining diff can't create a new block -> no resize
-            if ((new_size - old_size) < 16) {
-                return va;
+            free_block((void*)((uint32)va + new_size));
+        }
+        else {
+        	cprintf("NO coalesce, address is: %x \n", va);
+            // if remaining diff can't create a new block ->
+        	// no resize | search for a smaller free block (TODO check if needed)
+            if ((old_size - new_size) < 16) {
+            	1;
             }
             // else: separate block, and free extra space
             else {
                 // resize old block
                 set_block_data(va, new_size, 1);
                 // set extra space to a free block
-                set_block_data((va + new_size), (old_size - new_size), 0);
+                set_block_data((void*)((uint32)va + new_size), (old_size - new_size), 1);
                 // free new block and add to free list
-                free_block((va + new_size));
+                free_block((void*)((uint32)va + new_size));
             }
+            return va;
         }
-    } else {
+    }
+    else {
+    	// new size == old size
         return va;
     }
+
     return NULL;
-}
-
-void remove_block_from_free_list(void *va){
-
 }
 
 
