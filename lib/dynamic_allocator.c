@@ -288,22 +288,31 @@ void *realloc_block_FF(void *va, uint32 new_size) {
         return NULL;
     }
     // -----------------------
-    uint32 old_size = (uint32)(va - 1);
+    uint32 old_size = get_block_size(va);
+    new_size+=8;
     if (new_size > old_size) {
-        uint32 next_block_size = get_block_size((va + old_size));
-        // if next block is free and can accomodate new size -> merge
-        if (is_free_block((va + old_size)) && (next_block_size + old_size >= new_size)) {
+        uint32 next_block_size = get_block_size((void*)((uint32)va + old_size));
+        // if next block is free and can accommodate new size -> merge
+        cprintf("Because: %d + %d = %d \n", next_block_size, old_size, new_size);
+        if (is_free_block((uint32 *)va + old_size) && (next_block_size + old_size >= new_size)) {
+        	cprintf("no need to relocate\n");
             uint32 rem_size = next_block_size + old_size - new_size;
             if (rem_size < 16) {
                 set_block_data(va, next_block_size + old_size, 1);
+                LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
             } else {
+            	// remove old free block from list
+            	set_block_data((void*)((uint32)va + old_size), next_block_size, 1);
+            	LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
+            	//
                 set_block_data(va, new_size, 1);
-                set_block_data(va + new_size, rem_size, 0);
-                free_block((va + new_size));
+                set_block_data((void*)((uint32)va + new_size), rem_size, 1);
+                free_block((void*)((uint32)va + new_size));
             }
             return va;
         } else {
             // need to move the block to a bigger one
+        	cprintf("relocate to a bigger block\n");
             void *new_block = alloc_block_FF(new_size);
             if (new_block == NULL)
                 return NULL;
@@ -339,6 +348,10 @@ void *realloc_block_FF(void *va, uint32 new_size) {
         return va;
     }
     return NULL;
+}
+
+void remove_block_from_free_list(void *va){
+
 }
 
 
