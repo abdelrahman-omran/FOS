@@ -354,6 +354,20 @@ void  free_block(void *va) {
 	}
 
 }
+
+//=========================================
+// [7] COPY DATA FROM BLOCK1 TO BLOCK2:
+//=========================================
+void copy_block_data(void* va1, void* va2){
+	uint32 block_sz = get_block_size(va1) - 8;
+	char *ptr1 = va1; char *ptr2 = va2;
+	cprintf("copy copy\n");
+	for(int i=0; i < block_sz; i++){
+		*ptr2 = *ptr1;
+		ptr1++; ptr2++;
+	}
+}
+
 //=========================================
 // [6] REALLOCATE BLOCK BY FIRST FIT:
 //=========================================
@@ -394,7 +408,7 @@ void *realloc_block_FF(void *va, uint32 new_size) {
                 set_block_data(va, next_block_size + old_size, 1);
                 LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
             } else {
-            	// remove old free block from list
+            	// allocate the next block
             	set_block_data((void*)((uint32)va + old_size), next_block_size, 1);
             	LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
             	//
@@ -406,12 +420,14 @@ void *realloc_block_FF(void *va, uint32 new_size) {
         } else {
             // need to move the block to a bigger one
         	cprintf("relocate to a bigger block\n");
-            void *new_block = alloc_block_FF(new_size-8);
-            if (new_block == NULL)
+            void *new_alloc_block = alloc_block_FF(new_size-8);
+            if (new_alloc_block == NULL)
                 return NULL;
-            //
+            // copy data
+            copy_block_data(va, new_alloc_block);
+            // free old block
             free_block(va);
-            return new_block;
+            return new_alloc_block;
         }
     } else if (new_size < old_size) {
         // is next block free? -> coalesce
