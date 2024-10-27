@@ -191,9 +191,11 @@ void *alloc_block_FF(uint32 size)
 			}
 		}
 
-        void *newBlock = sbrk(effectiveSize);
-        if (get_block_size(newBlock)<effectiveSize) return NULL;
-		else return (void *)((char *)newBlock);
+//        void *newBlock = sbrk(effectiveSize);
+//        if (get_block_size(newBlock)<effectiveSize) return NULL;
+//		else return (void *)((char *)newBlock);
+        sbrk(effectiveSize);
+        return NULL;
 
 }
 //=========================================
