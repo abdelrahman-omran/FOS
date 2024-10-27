@@ -363,20 +363,26 @@ void *realloc_block_FF(void *va, uint32 new_size) {
     // panic("realloc_block_FF is not implemented yet");
     // Your Code is Here...
 
+	// add metadata size
+	new_size+=8;
     // -- Handle edge cases --
     if (va == NULL) {
-        if (new_size != 0) {
-            return alloc_block_FF(new_size);
+        if (new_size > 15) {
+            return alloc_block_FF(new_size-8);
         }
         return NULL;
     }
-    if (new_size == 0) {
+    // if orig size equal zero
+    if (new_size == 8) {
         free_block(va);
         return NULL;
     }
+    // if invalid block size
+	if(new_size < 16){
+		return NULL;
+	}
     // -----------------------
-    uint32 old_size = get_block_size(va);
-    new_size+=8;
+    uint32 old_size = get_block_size(va); // with metadata
     if (new_size > old_size) {
         uint32 next_block_size = get_block_size((void*)((uint32)va + old_size));
         // if next block is free and can accommodate new size -> merge
@@ -400,7 +406,7 @@ void *realloc_block_FF(void *va, uint32 new_size) {
         } else {
             // need to move the block to a bigger one
         	cprintf("relocate to a bigger block\n");
-            void *new_block = alloc_block_FF(new_size);
+            void *new_block = alloc_block_FF(new_size-8);
             if (new_block == NULL)
                 return NULL;
             //
@@ -408,9 +414,6 @@ void *realloc_block_FF(void *va, uint32 new_size) {
             return new_block;
         }
     } else if (new_size < old_size) {
-    	if(new_size < 16){
-    		return NULL;
-    	}
         // is next block free? -> coalesce
         if (is_free_block((void*)((uint32)va + old_size))) {
             // resize old block
@@ -436,8 +439,8 @@ void *realloc_block_FF(void *va, uint32 new_size) {
                 // free new block and add to free list
                 free_block((void*)((uint32)va + new_size));
             }
-            return va;
         }
+        return va;
     }
     else {
     	// new size == old size
