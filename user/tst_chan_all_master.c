@@ -30,13 +30,13 @@ _main(void)
 	int cnt = 0;
 	while (numOfBlockedProcesses != numOfSlaves)
 	{
-		env_sleep(1000);
+		env_sleep(10000);
+		cnt++ ;
 		if (cnt == numOfSlaves)
 		{
 			panic("%~test channels failed! unexpected number of blocked slaves. Expected = %d, Current = %d", numOfSlaves, numOfBlockedProcesses);
 		}
 		sys_utilities("__GetChanQueueSize__", (uint32)(&numOfBlockedProcesses));
-		cnt++ ;
 	}
 
 	rsttst();
@@ -48,15 +48,15 @@ _main(void)
 	cnt = 0;
 	while (gettst() != numOfSlaves)
 	{
-		env_sleep(1000);
+		env_sleep(10000);
+		cnt++ ;
 		if (cnt == numOfSlaves)
 		{
 			panic("%~test channels failed! not all slaves finished");
 		}
-		cnt++ ;
 	}
 
-	cprintf("%~\n\nCongratulations!! Test of Channel (sleep & wakeup ALL) completed successfully!!\n\n");
+	cprintf("Congratulations!! Test of Channel (sleep & wakeup ALL) completed successfully!!\n\n\n");
 
 	return;
 }

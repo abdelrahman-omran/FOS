@@ -191,9 +191,11 @@ void *alloc_block_FF(uint32 size)
 			}
 		}
 
-        void *newBlock = sbrk(effectiveSize);
-        if (get_block_size(newBlock)<effectiveSize) return NULL;
-		else return (void *)((char *)newBlock);
+//        void *newBlock = sbrk(effectiveSize);
+//        if (get_block_size(newBlock)<effectiveSize) return NULL;
+//		else return (void *)((char *)newBlock);
+        sbrk(effectiveSize);
+        return NULL;
 
 }
 //=========================================
@@ -352,6 +354,20 @@ void  free_block(void *va) {
 	}
 
 }
+
+//=========================================
+// [7] COPY DATA FROM BLOCK1 TO BLOCK2:
+//=========================================
+void copy_block_data(void* va1, void* va2){
+	uint32 block_sz = get_block_size(va1) - 8;
+	uint8 *ptr1 = va1; uint8 *ptr2 = va2;
+	//cprintf("copy copy\n");
+	for(int i=0; i < block_sz; i++){
+		*ptr2 = *ptr1;
+		ptr1++; ptr2++;
+	}
+}
+
 //=========================================
 // [6] REALLOCATE BLOCK BY FIRST FIT:
 //=========================================
@@ -361,32 +377,38 @@ void *realloc_block_FF(void *va, uint32 new_size) {
     // panic("realloc_block_FF is not implemented yet");
     // Your Code is Here...
 
+	// add metadata size
+	new_size+=8;
     // -- Handle edge cases --
     if (va == NULL) {
-        if (new_size != 0) {
-            return alloc_block_FF(new_size);
+        if (new_size > 15) {
+            return alloc_block_FF(new_size-8);
         }
         return NULL;
     }
-    if (new_size == 0) {
+    // if orig size equal zero
+    if (new_size == 8) {
         free_block(va);
         return NULL;
     }
+    // if invalid block size
+	if(new_size < 16){
+		return NULL;
+	}
     // -----------------------
-    uint32 old_size = get_block_size(va);
-    new_size+=8;
+    uint32 old_size = get_block_size(va); // with metadata
     if (new_size > old_size) {
         uint32 next_block_size = get_block_size((void*)((uint32)va + old_size));
         // if next block is free and can accommodate new size -> merge
-        cprintf("Because: %d + %d >= %d \n", next_block_size, old_size, new_size);
+        //cprintf("Because: %d + %d >= %d \n", next_block_size, old_size, new_size);
         if (is_free_block((uint32 *)va + old_size) && (next_block_size + old_size >= new_size)) {
-        	cprintf("no need to relocate\n");
+        	//cprintf("no need to relocate\n");
             uint32 rem_size = next_block_size + old_size - new_size;
             if (rem_size < 16) {
                 set_block_data(va, next_block_size + old_size, 1);
                 LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
             } else {
-            	// remove old free block from list
+            	// allocate the next block
             	set_block_data((void*)((uint32)va + old_size), next_block_size, 1);
             	LIST_REMOVE(&freeBlocksList,(struct BlockElement*)((uint32)va + old_size));
             	//
@@ -397,18 +419,17 @@ void *realloc_block_FF(void *va, uint32 new_size) {
             return va;
         } else {
             // need to move the block to a bigger one
-        	cprintf("relocate to a bigger block\n");
-            void *new_block = alloc_block_FF(new_size);
-            if (new_block == NULL)
+        	//cprintf("relocate to a bigger block\n");
+            void *new_alloc_block = alloc_block_FF(new_size-8);
+            if (new_alloc_block == NULL)
                 return NULL;
-            //
+            // copy data
+            copy_block_data(va, new_alloc_block);
+            // free old block
             free_block(va);
-            return new_block;
+            return new_alloc_block;
         }
     } else if (new_size < old_size) {
-    	if(new_size < 16){
-    		return NULL;
-    	}
         // is next block free? -> coalesce
         if (is_free_block((void*)((uint32)va + old_size))) {
             // resize old block
@@ -419,7 +440,7 @@ void *realloc_block_FF(void *va, uint32 new_size) {
             free_block((void*)((uint32)va + new_size));
         }
         else {
-        	cprintf("NO coalesce, address is: %x \n", va);
+        	//cprintf("NO coalesce, address is: %x \n", va);
             // if remaining diff can't create a new block ->
         	// no resize | search for a smaller free block (TODO check if needed)
             if ((old_size - new_size) < 16) {
@@ -434,8 +455,8 @@ void *realloc_block_FF(void *va, uint32 new_size) {
                 // free new block and add to free list
                 free_block((void*)((uint32)va + new_size));
             }
-            return va;
         }
+        return va;
     }
     else {
     	// new size == old size

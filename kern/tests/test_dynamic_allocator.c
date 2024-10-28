@@ -1419,6 +1419,46 @@ void test_realloc_block_FF()
 	{
 		eval += 25;
 	}
+	//[3.3] Reallocate in a different place (Relocate and Copy)
+	cprintf("	3.3: reallocate in a different place (Relocate and Copy)\n\n");
+	is_correct = 1;
+	{
+		// Select a block to reallocate
+		blockIndex = 3 * allocCntPerSize - 1;
+		old_size = allocSizes[3] - sizeOfMetaData;
+		new_size = old_size + allocSizes[4];
+
+		// Calculate the expected values for the new block
+		expectedSize = ROUNDUP(new_size + sizeOfMetaData, 2);  // Expected new size
+		void* oldVA = startVAs[blockIndex]; // Old virtual address
+
+		va = realloc_block_FF(startVAs[blockIndex], new_size);
+
+		expectedNumOfFreeBlks--;
+
+		// Verify
+		if (va == oldVA) {
+			is_correct = 0;
+			cprintf("test_realloc_block_FF #3.3.1: Failed - Expected relocation, but block was not moved.\n");
+		} else {
+			// Check that the new block is set correctly
+			if (check_block(va, va, expectedSize, 1) == 0) {
+				is_correct = 0;
+				cprintf("test_realloc_block_FF #3.3.2: Failed - New block's size or allocation status is incorrect.\n");
+			}
+
+			// Validate the content is copied from the old block to the new one
+			if (*((char*)startVAs[blockIndex] + 1) != *((char*)oldVA + 1) ||
+					*((char*)endVAs[blockIndex] - 1) != *((char*)oldVA + old_size - 2)) {
+				is_correct = 0;
+				cprintf("test_realloc_block_FF #3.3.3: WRONG REALLOC! Content of the block is not copied correctly. Expected second byte: %d, second-to-last byte: %d\n", *((char*)oldVA + 1), *((char*)oldVA + old_size - 2));
+			}
+			//
+			expectedNumOfFreeBlks++;
+			if (is_correct) is_correct = check_list_size(expectedNumOfFreeBlks);
+		}
+	}
+
 
 	//====================================================================//
 	//[4] Test realloc with decreased sizes
