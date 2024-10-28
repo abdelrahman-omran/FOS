@@ -360,8 +360,8 @@ void  free_block(void *va) {
 //=========================================
 void copy_block_data(void* va1, void* va2){
 	uint32 block_sz = get_block_size(va1) - 8;
-	char *ptr1 = va1; char *ptr2 = va2;
-	cprintf("copy copy\n");
+	uint8 *ptr1 = va1; uint8 *ptr2 = va2;
+	//cprintf("copy copy\n");
 	for(int i=0; i < block_sz; i++){
 		*ptr2 = *ptr1;
 		ptr1++; ptr2++;
@@ -400,9 +400,9 @@ void *realloc_block_FF(void *va, uint32 new_size) {
     if (new_size > old_size) {
         uint32 next_block_size = get_block_size((void*)((uint32)va + old_size));
         // if next block is free and can accommodate new size -> merge
-        cprintf("Because: %d + %d >= %d \n", next_block_size, old_size, new_size);
+        //cprintf("Because: %d + %d >= %d \n", next_block_size, old_size, new_size);
         if (is_free_block((uint32 *)va + old_size) && (next_block_size + old_size >= new_size)) {
-        	cprintf("no need to relocate\n");
+        	//cprintf("no need to relocate\n");
             uint32 rem_size = next_block_size + old_size - new_size;
             if (rem_size < 16) {
                 set_block_data(va, next_block_size + old_size, 1);
@@ -419,7 +419,7 @@ void *realloc_block_FF(void *va, uint32 new_size) {
             return va;
         } else {
             // need to move the block to a bigger one
-        	cprintf("relocate to a bigger block\n");
+        	//cprintf("relocate to a bigger block\n");
             void *new_alloc_block = alloc_block_FF(new_size-8);
             if (new_alloc_block == NULL)
                 return NULL;
@@ -440,7 +440,7 @@ void *realloc_block_FF(void *va, uint32 new_size) {
             free_block((void*)((uint32)va + new_size));
         }
         else {
-        	cprintf("NO coalesce, address is: %x \n", va);
+        	//cprintf("NO coalesce, address is: %x \n", va);
             // if remaining diff can't create a new block ->
         	// no resize | search for a smaller free block (TODO check if needed)
             if ((old_size - new_size) < 16) {
