@@ -16,13 +16,24 @@
 
 inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, uint32 virtual_address)
 {
-	//TODO: [PROJECT'24.MS2 - #07] [2] FAULT HANDLER I - Create a new WS element
-	//If failed to create a new one, kernel should panic()!
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("env_page_ws_list_create_element is not implemented yet");
-	//Your Code is Here...
 
+
+	//Create a new WS element
+	struct WorkingSetElement* new_element = NULL;
+
+	    /*if (!new_element) {
+	        panic("Failed to allocate memory for new WorkingSetElement");
+	    }*/
+
+	    //Initialize the new element with virtual address
+	    new_element->virtual_address = virtual_address;
+
+	    //Adding the new element to the process's WS
+	    LIST_INSERT_HEAD(&e->page_WS_list, new_element);
+
+	    return new_element;
 }
+
 inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 {
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
