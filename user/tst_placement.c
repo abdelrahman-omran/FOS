@@ -12,7 +12,7 @@ void _main(void)
 {
 #if USE_KHEAP
 	//	cprintf("envID = %d\n",envID);
-
+	cprintf("I'm here test \n");
 	char arr[PAGE_SIZE*1024*4];
 	bool found ;
 	//("STEP 0: checking Initial WS entries ...\n");

@@ -41,6 +41,9 @@ unsigned int kheap_physical_address(unsigned int virtual_address);
 uint32 start;
 uint32 brk;
 uint32 rlimit;
+uint32 mapping_physicalFrames_to_virtualAddress[1024*10];
+uint32 page_allocations[2060];
+
 
 int numOfKheapVACalls ;
 

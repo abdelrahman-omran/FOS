@@ -74,11 +74,13 @@ void fault_handler(struct Trapframe *tf)
 	//	cprintf("\n************Faulted VA = %x************\n", fault_va);
 	//	print_trapframe(tf);
 	/******************************************************/
-
+	env_create("fos_helloWorld", 20,20,1);
 	//If same fault va for 3 times, then panic
 	//UPDATE: 3 FAULTS MUST come from the same environment (or the kernel)
 	struct Env* cur_env = get_cpu_proc();
-	//cprintf("%d", cur_env->env_id);
+	if(cur_env == NULL)
+		cprintf("I'm NULL \n");
+	cprintf("Faulting address: %x\n", fault_va); // Print as hexadecimal
 	if (last_fault_va == fault_va && last_faulted_env == cur_env)
 	{
 		num_repeated_fault++ ;
