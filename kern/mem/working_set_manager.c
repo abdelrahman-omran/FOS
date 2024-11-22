@@ -17,7 +17,7 @@ inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, 
 {
 	//cprintf("DID I get here??");
     // Create a new WS element
-    struct WorkingSetElement* new_element = (struct WorkingSetElement*) kmalloc(PAGE_SIZE);
+    struct WorkingSetElement* new_element = (struct WorkingSetElement*) kmalloc(sizeof(struct WorkingSetElement));
     if (!new_element) {
         panic("Failed to allocate memory for new WorkingSetElement");
     }

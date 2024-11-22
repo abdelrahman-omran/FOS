@@ -867,6 +867,7 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 #if USE_KHEAP
 	// Allocate space for the kernel stack
 	//cprintf("I'm here 1 \n");
+
 	void* kstack_base = kmalloc(KERNEL_STACK_SIZE + PAGE_SIZE);
 	if (kstack_base == NULL)
 	{

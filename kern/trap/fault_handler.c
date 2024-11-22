@@ -12,7 +12,6 @@
 #include <kern/disk/pagefile_manager.h>
 #include <kern/mem/memory_manager.h>
 
-
 //2014 Test Free(): Set it to bypass the PAGE FAULT on an instruction with this length and continue executing the next one
 // 0 means don't bypass the PAGE FAULT
 uint8 bypassInstrLength = 0;
@@ -154,16 +153,21 @@ void fault_handler(struct Trapframe *tf)
 			//your code is here
 			uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),fault_va);
 
-			            if(fault_va >= KERNEL_BASE && fault_va <= 0xffffffff)
+			            if(fault_va >= USER_LIMIT)
 						{
+			            	cprintf("I'm 1 \n");
 							env_exit();
 						}
 						else if((perms & PERM_PRESENT) && (!(perms & PERM_WRITEABLE)))
 						{
+			            	cprintf("I'm 2 \n");
+
 							env_exit();
 						}
 						else if((fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) && (!(perms & PERM_AVAILABLE)))
 			            {
+			            	cprintf("I'm 3 \n");
+
 			                env_exit();
 			            }
 		/*============================================================================================*/
@@ -226,7 +230,6 @@ void table_fault_handler(struct Env * curenv, uint32 fault_va)
 //=========================
 // [3] PAGE FAULT HANDLER:
 //=========================
-// int freePages = sys_calculate_free_frames();
 void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 {
 #if USE_KHEAP
@@ -240,6 +243,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//cprintf("I got here 1 \n");
 		cprintf("%d \n", wsSize);
 		cprintf("%d \n", (faulted_env->page_WS_max_size));
+		//uint32 freePages = sys_calculate_free_frames();
 
 	if(wsSize < (faulted_env->page_WS_max_size))
 	{
