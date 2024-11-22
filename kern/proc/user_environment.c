@@ -92,7 +92,6 @@ void set_environment_entry_point(struct Env* e, uint8* ptr_program_start);
 //
 void env_init(void)
 {
-	cprintf("I'm here user_env \n");
 	int iEnv = NENV-1;
 	for(; iEnv >= 0; iEnv--)
 	{
@@ -867,13 +866,13 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 {
 #if USE_KHEAP
 	// Allocate space for the kernel stack
-	cprintf("I'm here 1 \n");
+	//cprintf("I'm here 1 \n");
 	void* kstack_base = kmalloc(KERNEL_STACK_SIZE + PAGE_SIZE);
 	if (kstack_base == NULL)
 	{
 		panic("Failed to allocate kernel stack for the process!");
 	}
-	cprintf("I'm here 2 \n");
+	//cprintf("I'm here 2 \n");
 
 	// Calculate the address of the guard page (bottom of the stack region)
 	void* guard_page = kstack_base;
@@ -886,13 +885,14 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 	}
 	// Unmap the guard page (set it as not present)
 	unmap_frame(ptr_user_page_directory, guard_page_va);
-	cprintf("I'm here 3 \n");
-
+	//cprintf("I'm here 3 \n");
+	uint32 base = (uint32) kstack_base;
 	// Return the top address of the stack (stack grows downward)
-	//void* stack_top = (void*)((uint32)kstack_base + KERNEL_STACK_SIZE + PAGE_SIZE);
-	cprintf("I'm here 4 \n");
-
-	return kstack_base + KERNEL_STACK_SIZE + PAGE_SIZE;
+	void* stack_top = (void*)base;
+	base += KERNEL_STACK_SIZE;
+	base += PAGE_SIZE;
+	//cprintf("I'm here 4 \n");
+	return stack_top;
 #else
 	if (KERNEL_HEAP_MAX - __cur_k_stk < KERNEL_STACK_SIZE)
 		panic("Run out of kernel heap!! Unable to create a kernel stack for the process. Can't create more processes!");
