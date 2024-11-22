@@ -17,8 +17,6 @@
 //	Otherwise (if no memory OR initial size exceed the given limit): PANIC
 int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate, uint32 daLimit)
 {
-	//TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator
-	// Write your code here, remove the panic and write your code
 	start = daStart;
 
 	brk = daStart + initSizeToAllocate;
@@ -32,34 +30,28 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		return E_NO_MEM;
 	}
 
-	for (uint32 i = 0; i < (1024*10)-1 ; i++)
-	     {
-	       mapping_physicalFrames_to_virtualAddress[i] = 0;
-	     }
-
 	uint32 moving_address = start;
 	while (moving_address < brk)
 	{
 		struct FrameInfo *frame;
 		allocate_frame(&frame);
 		map_frame(ptr_page_directory, frame, moving_address, PERM_WRITEABLE);
-
-        //storing this V_address in array to be accessed by frame_number
-		uint32 physicalAddress = to_physical_address(frame);
-        uint32 frameNumber = physicalAddress >> 12;
-        mapping_physicalFrames_to_virtualAddress[frameNumber] = moving_address;
-
 		moving_address += PAGE_SIZE;
-
 	}
 
 	initialize_dynamic_allocator(daStart, initSizeToAllocate);
 
+	// initialize allocations
+	for(int i=0; i < 2060; i++){
+		page_allocations[i] = 0;
+	}
+
 	return 0;
 }
 
-void* sbrk(int numOfPages)
+void *sbrk(int numOfPages)
 {
+
 	// if inc equal 0 then return the curr brk
 	if (numOfPages == 0)
 	{
@@ -90,15 +82,7 @@ void* sbrk(int numOfPages)
 			struct FrameInfo *frame;
 			allocate_frame(&frame);
 			map_frame(ptr_page_directory, frame, currAdress, PERM_WRITEABLE);
-
-			//storing this V_address in array to be accessed by frame_number
-			uint32 physicalAddress = to_physical_address(frame);
-            uint32 frameNumber = physicalAddress >> 12;
-            mapping_physicalFrames_to_virtualAddress[frameNumber] = currAdress;
-
 			currAdress += PAGE_SIZE;
-
-
 		}
 
 		// al brk dlw2ty b2a hna wa brg3 al old
@@ -126,12 +110,6 @@ void* sbrk(int numOfPages)
         	struct FrameInfo *frame = get_frame_info(ptr_page_directory, currAdress, &page_table);
 			free_frame(frame);
 			unmap_frame(ptr_page_directory, currAdress);
-
-			//Rmoving this V_address from the array
-						uint32 physicalAddress = to_physical_address(frame);
-			            uint32 frameNumber = physicalAddress >> 12;
-			            mapping_physicalFrames_to_virtualAddress[frameNumber] = 0;
-
 			currAdress += PAGE_SIZE;
 		}
 
@@ -141,7 +119,6 @@ void* sbrk(int numOfPages)
 
 	return NULL;
 }
-
 //TODO: [PROJECT'24.MS2 - BONUS#2] [1] KERNEL HEAP - Fast Page Allocator
 
 void *kmalloc(unsigned int size)
@@ -152,12 +129,13 @@ void *kmalloc(unsigned int size)
     }
     if (size <= DYN_ALLOC_MAX_BLOCK_SIZE )
     {
+		if(isKHeapPlacementStrategyFIRSTFIT())
+			return alloc_block_FF(size);
 
-     if(isKHeapPlacementStrategyFIRSTFIT())
-        return alloc_block_FF(size);
-        return alloc_block_BF(size);
-
+		return alloc_block_BF(size);
     }
+
+    // bounds setup
     uint32 needed_pages = size / PAGE_SIZE;
     needed_pages += (size % PAGE_SIZE != 0) ? 1 : 0;
 
@@ -166,7 +144,7 @@ void *kmalloc(unsigned int size)
 
     uint32 free_pages_found = 0;
     uint32 loop_address = bottom_bound;
-
+    // loop allocating frames
     while (loop_address < top_bound)
     {
         uint32 *page_table;
@@ -182,12 +160,10 @@ void *kmalloc(unsigned int size)
                     struct FrameInfo *new_frame;
                     allocate_frame(&new_frame);
                     map_frame(ptr_page_directory, new_frame, ret_address + (i * PAGE_SIZE), PERM_WRITEABLE);
-
-					//storing this V_address in array to be accessed by frame_number
-					uint32 physicalAddress = to_physical_address(new_frame);
-                    uint32 frameNumber = physicalAddress >> 12;
-                    mapping_physicalFrames_to_virtualAddress[frameNumber] = ret_address+(i*PAGE_SIZE);
                 }
+                // add to allocations arr
+                page_allocations[ret_address/PAGE_SIZE] = needed_pages;
+                //cprintf("Size of allocation for address %x: %d\n", ret_address, needed_pages);
                 return (void *)ret_address;
             }
         }

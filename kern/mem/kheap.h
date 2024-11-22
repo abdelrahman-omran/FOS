@@ -49,6 +49,9 @@ int numOfKheapVACalls ;
 
 
 //TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - add suitable code here
-
+uint32 start;
+uint32 brk;
+uint32 rlimit;
+uint32 page_allocations[2060];
 
 #endif // FOS_KERN_KHEAP_H_
