@@ -3,11 +3,6 @@
 #include <inc/memlayout.h>
 #include <inc/dynamic_allocator.h>
 #include "memory_manager.h"
-#include <kern/proc/user_environment.h>
-#include <kern/cpu/sched.h>
-#include <kern/cpu/cpu.h>
-#include <kern/disk/pagefile_manager.h>
-#include <kern/mem/memory_manager.h>
 
 //Initialize the dynamic allocator of kernel heap with the given start address, size & limit
 //All pages in the given range should be allocated
@@ -30,12 +25,24 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		return E_NO_MEM;
 	}
 
+	// initilaize mapping array to 0
+	for (uint32 i = 0; i < (1024*10)-1 ; i++)
+     {
+       mapping_physicalFrames_to_virtualAddress[i] = 0;
+     }
+
 	uint32 moving_address = start;
 	while (moving_address < brk)
 	{
 		struct FrameInfo *frame;
 		allocate_frame(&frame);
 		map_frame(ptr_page_directory, frame, moving_address, PERM_WRITEABLE);
+
+        //storing this V_address in array to be accessed by frame_number
+		uint32 physicalAddress = to_physical_address(frame);
+        uint32 frameNumber = physicalAddress >> 12;
+        mapping_physicalFrames_to_virtualAddress[frameNumber] = moving_address;
+
 		moving_address += PAGE_SIZE;
 	}
 
@@ -82,6 +89,12 @@ void *sbrk(int numOfPages)
 			struct FrameInfo *frame;
 			allocate_frame(&frame);
 			map_frame(ptr_page_directory, frame, currAdress, PERM_WRITEABLE);
+
+			//storing this V_address in array to be accessed by frame_number
+			uint32 physicalAddress = to_physical_address(frame);
+            uint32 frameNumber = physicalAddress >> 12;
+            mapping_physicalFrames_to_virtualAddress[frameNumber] = currAdress;
+
 			currAdress += PAGE_SIZE;
 		}
 
@@ -110,6 +123,12 @@ void *sbrk(int numOfPages)
         	struct FrameInfo *frame = get_frame_info(ptr_page_directory, currAdress, &page_table);
 			free_frame(frame);
 			unmap_frame(ptr_page_directory, currAdress);
+
+			//Rmoving this V_address from the array
+			uint32 physicalAddress = to_physical_address(frame);
+            uint32 frameNumber = physicalAddress >> 12;
+            mapping_physicalFrames_to_virtualAddress[frameNumber] = 0;
+
 			currAdress += PAGE_SIZE;
 		}
 
@@ -160,6 +179,12 @@ void *kmalloc(unsigned int size)
                     struct FrameInfo *new_frame;
                     allocate_frame(&new_frame);
                     map_frame(ptr_page_directory, new_frame, ret_address + (i * PAGE_SIZE), PERM_WRITEABLE);
+
+					//storing this V_address in array to be accessed by frame_number
+					uint32 physicalAddress = to_physical_address(new_frame);
+                    uint32 frameNumber = physicalAddress >> 12;
+                    mapping_physicalFrames_to_virtualAddress[frameNumber] = ret_address+(i*PAGE_SIZE);
+
                 }
                 // add to allocations arr
                 page_allocations[ret_address/PAGE_SIZE] = needed_pages;
@@ -217,6 +242,10 @@ void kfree(void* virtual_address)
 ;			struct FrameInfo* frame = get_frame_info(ptr_page_directory, curr_address, &ptr_page_table);
 			if (frame != NULL)
 			{
+				//Rmoving this V_address from the array 
+				uint32 physicalAddress = to_physical_address(frame);
+                uint32 frameNumber = physicalAddress >> 12;
+                mapping_physicalFrames_to_virtualAddress[frameNumber] = 0;
 
 				//free_frame(frame);
 				unmap_frame(ptr_page_directory, curr_address);
@@ -232,7 +261,6 @@ void kfree(void* virtual_address)
 
 }
 
-
 unsigned int kheap_physical_address(unsigned int virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #05] [1] KERNEL HEAP - kheap_physical_address
@@ -240,76 +268,83 @@ unsigned int kheap_physical_address(unsigned int virtual_address)
 	//panic("kheap_physical_address() is not implemented yet...!!");
 
 	if (virtual_address < KERNEL_HEAP_START || virtual_address >= KERNEL_HEAP_MAX)
-		{
-			return 0;
-		}
+	{
+		return 0;
+	}
 
-		uint32 offset = virtual_address & 0xFFF;
+	uint32 offset = virtual_address & 0xFFF;
 
-		uint32 directoryIndex = PDX(virtual_address);
+	uint32 directoryIndex = PDX(virtual_address);
 
-		uint32 tabelIndex = PTX(virtual_address);
+	uint32 tabelIndex = PTX(virtual_address);
 
-		uint32 *pageTabel = NULL;
+	uint32 *pageTabel = NULL;
 
-		get_page_table(ptr_page_directory , virtual_address , &pageTabel);
+	get_page_table(ptr_page_directory , virtual_address , &pageTabel);
 
-		if (pageTabel == NULL)
-		{
-			return 0;
-		}
+	if (pageTabel == NULL)
+	{
+		return 0;
+	}
 
-		 uint32 entry = pageTabel[tabelIndex]; //we have frame number with permession
+	 uint32 entry = pageTabel[tabelIndex]; //we have frame number with permession
 
-		if(entry == 0)
-		{
-			return 0;
-		}
+	if(entry == 0)
+	{
+		return 0;
+	}
 
-		 uint32 frameNumber = entry >> 12; // become frame number only
+	 uint32 frameNumber = entry >> 12; // become frame number only
 
-		 uint32 physicalAddress = (frameNumber << 12) | offset; //phy=frame number with offset
+	 uint32 physicalAddress = (frameNumber << 12) | offset; //phy=frame number with offset
 
-		 return physicalAddress;
+	 return physicalAddress;
 
 
-	  	//return the physical address corresponding to given virtual_address
-	  	//refer to the project presentation and documentation for details
+  	//return the physical address corresponding to given virtual_address
+  	//refer to the project presentation and documentation for details
 
-	  	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
-}
+  	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
+} 
+
+
+
+
 
 unsigned int kheap_virtual_address(unsigned int physical_address)
 {
 	//TODO: [PROJECT'24.MS2 - #06] [1] KERNEL HEAP - kheap_virtual_address
 	// Write your code here, remove the panic and write your code
 	//panic("kheap_virtual_address() is not implemented yet...!!");
+	  if (physical_address == 0) {
+        return 0; 
+    }
+
+	  uint32 frameNumber = physical_address >> 12;  
+    uint32 offset = physical_address & 0xFFF;      
+
+	// Accessing the virtual address associated with this physical frame
+    uint32 virtualAddress = mapping_physicalFrames_to_virtualAddress[frameNumber];
+
+    // If there's a valid mapping, return the complete virtual address
+    if (virtualAddress != 0) {
+
+		// Return the full virtual address
+        return virtualAddress + offset; 
+    }
+
+    // If no mapping is found, return 0
+    return 0;
+
 
 	//return the virtual address corresponding to given physical_address
 	//refer to the project presentation and documentation for details
 
 	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
-	if (physical_address == 0) {
-	       return 0;
-	     }
-
-		uint32 frameNumber = physical_address >> 12;
-	    uint32 offset = physical_address & 0xFFF;
-
-		// Accessing the virtual address associated with this physical frame
-	    uint32 virtualAddress = mapping_physicalFrames_to_virtualAddress[frameNumber];
-
-	    // If there's a valid mapping, return the complete virtual address
-	    if (virtualAddress != 0) {
-
-			// Return the full virtual address
-	        return virtualAddress + offset;
-	    }
-
-	    // If no mapping is found, return 0
-	    return 0;
-	  	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
 }
+
+
+
 //=================================================================================//
 //============================== BONUS FUNCTION ===================================//
 //=================================================================================//
