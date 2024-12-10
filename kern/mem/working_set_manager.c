@@ -9,30 +9,29 @@
 #include <kern/disk/pagefile_manager.h>
 #include "kheap.h"
 #include "memory_manager.h"
-
 ///============================================================================================
 /// Dealing with environment working set
 #if USE_KHEAP
 
 inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, uint32 virtual_address)
 {
-
-
-	//Create a new WS element
+	//cprintf("DID I get here??");
+    // Create a new WS element
     struct WorkingSetElement* new_element = (struct WorkingSetElement*) kmalloc(sizeof(struct WorkingSetElement));
+    if (!new_element) {
+        panic("Failed to allocate memory for new WorkingSetElement");
+    }
 
-	    /*if (!new_element) {
-	        panic("Failed to allocate memory for new WorkingSetElement");
-	    }*/
+    // Initialize the new element with virtual address
+    new_element->virtual_address = virtual_address;
+    //cprintf("Size of WorkingSetElement: %u\n", sizeof(struct WorkingSetElement));
 
-	    //Initialize the new element with virtual address
-	    new_element->virtual_address = virtual_address;
+    // Adding the new element to the process's WS
+    //LIST_INSERT_TAIL(&e->page_WS_list, new_element);
 
-	    //Adding the new element to the process's WS
-	    LIST_INSERT_HEAD(&e->page_WS_list, new_element);
-
-	    return new_element;
+    return new_element;
 }
+
 inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 {
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
@@ -368,5 +367,4 @@ void half_WS_Size(struct Env* e, int isImmidiate)
 {
 	panic("not handled yet");
 }
-
 

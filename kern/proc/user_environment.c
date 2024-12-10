@@ -866,13 +866,14 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 {
 #if USE_KHEAP
 	// Allocate space for the kernel stack
-	cprintf("I'm here 1 \n");
+	//cprintf("I'm here 1 \n");
+
 	void* kstack_base = kmalloc(KERNEL_STACK_SIZE + PAGE_SIZE);
 	if (kstack_base == NULL)
 	{
 		panic("Failed to allocate kernel stack for the process!");
 	}
-	cprintf("I'm here 2 \n");
+	//cprintf("I'm here 2 \n");
 
 	// Calculate the address of the guard page (bottom of the stack region)
 	void* guard_page = kstack_base;
@@ -885,14 +886,13 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 	}
 	// Unmap the guard page (set it as not present)
 	unmap_frame(ptr_user_page_directory, guard_page_va);
-	cprintf("I'm here 3 \n");
+	//cprintf("I'm here 3 \n");
 	uint32 base = (uint32) kstack_base;
 	// Return the top address of the stack (stack grows downward)
 	void* stack_top = (void*)base;
 	base += KERNEL_STACK_SIZE;
 	base += PAGE_SIZE;
-	cprintf("I'm here 4 \n");
-
+	//cprintf("I'm here 4 \n");
 	return stack_top;
 #else
 	if (KERNEL_HEAP_MAX - __cur_k_stk < KERNEL_STACK_SIZE)
@@ -926,11 +926,16 @@ void delete_user_kern_stack(struct Env* e)
 //===============================================
 void initialize_uheap_dynamic_allocator(struct Env* e, uint32 daStart, uint32 daLimit)
 {
+	//cprintf("initialize_uheap_dynamic_allocator called\n");
 	//TODO: [PROJECT'24.MS2 - #10] [3] USER HEAP - initialize_uheap_dynamic_allocator
 	//Remember:
 	//	1) there's no initial allocations for the dynamic allocator of the user heap (=0)
 	//	2) call the initialize_dynamic_allocator(..) to complete the initialization
 	//panic("initialize_uheap_dynamic_allocator() is not implemented yet...!!");
+	e->start = daStart;
+	e->rlimit = daLimit;
+	e->brk = daStart;
+	initialize_dynamic_allocator(daStart , 0);
 }
 
 //==============================================================
@@ -1235,5 +1240,4 @@ void cleanup_buffers(struct Env* e)
 	//	struct freeFramesCounters ffc2 = calculate_available_frames();
 	//	cprintf("[%s] aft, mod = %d, fb = %d, fnb = %d\n",curenv->prog_name, ffc2.modified, ffc2.freeBuffered, ffc2.freeNotBuffered);
 }
-
 
