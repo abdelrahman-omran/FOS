@@ -11,6 +11,7 @@
 #include <kern/cpu/cpu.h>
 #include <kern/disk/pagefile_manager.h>
 #include <kern/mem/memory_manager.h>
+#include <kern/mem/kheap.h>
 
 //2014 Test Free(): Set it to bypass the PAGE FAULT on an instruction with this length and continue executing the next one
 // 0 means don't bypass the PAGE FAULT
@@ -168,6 +169,7 @@ void fault_handler(struct Trapframe *tf)
 			            	//cprintf("I'm 3 \n");
 			                env_exit();
 			            }
+
 		/*============================================================================================*/
 		}
 
@@ -238,7 +240,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
 
-		//cprintf("I got here 1 \n");
+		//cprintf("I got here 7 \n");
 		//cprintf("%d \n", wsSize);
 		//cprintf("%d \n", (faulted_env->page_WS_max_size));
 		//uint32 freePages = sys_calculate_free_frames();
@@ -295,102 +297,104 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//TODO: [PROJECT'24.MS3] [2] FAULT HANDLER II - Replacement
 		// Write your code here, remove the panic and write your code
 		//panic("page_fault_handler() Replacement is not implemented yet...!!");
-		int checking  = pf_read_env_page(faulted_env , &fault_va);
-					cprintf("%d",fault_va);
-		            cprintf("%d",checking);
 
-				int maxClock;
-				if(page_WS_max_sweeps < 0)
-				{
-					maxClock = (-1*page_WS_max_sweeps);
-				}
-				else
-				{
-					maxClock = page_WS_max_sweeps;
-				}
-		            struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env,fault_va);
-		            struct WorkingSetElement* leaving_element;
-					struct WorkingSetElement* prevElement;
+		//int checking  = pf_read_env_page(faulted_env , &fault_va);
+					//cprintf("%d",fault_va);
+		            //cprintf("%d",checking);
+    			//cprintf("I got here \n");
+				env_page_ws_print(faulted_env);
+//				int checking  = pf_read_env_page(faulted_env , &fault_va);
+//							cprintf("%d",fault_va);
+//				            cprintf("%d",checking);
 
-					LIST_FOREACH(leaving_element,&(faulted_env->page_WS_list))
-					{
-						if(leaving_element->virtual_address == (faulted_env->page_last_WS_element->virtual_address))
+						int maxClock;
+						if(page_WS_max_sweeps < 0)
 						{
-							break;
-						}
-					}
-
-					while(1 == 1)
-					{
-						uint32 leaving_va = leaving_element->virtual_address;
-						uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
-
-						if(perms & PERM_USED)
-						{
-							pt_set_page_permissions((faulted_env->env_page_directory),leaving_va,0,PERM_USED);
-							leaving_element->sweeps_counter = 0;
-							leaving_element = LIST_NEXT(leaving_element);
-							if(leaving_element == NULL)
-							{
-								leaving_element = LIST_FIRST(&(faulted_env->page_WS_list));
-							}
+							maxClock = (-1*page_WS_max_sweeps);
 						}
 						else
 						{
-							int Algo = 0;
-							leaving_element->sweeps_counter++;
-							uint32 sCounter = leaving_element->sweeps_counter;
+							maxClock = page_WS_max_sweeps;
+						}
+				            struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env,fault_va);
+				            //struct WorkingSetElement* leaving_element;
+							struct WorkingSetElement* prevElement;
 
-							if(page_WS_max_sweeps < 0)
-							{
-		                        if((sCounter == maxClock && !(perms & PERM_MODIFIED)) || (sCounter == (maxClock + 1) && (perms & PERM_MODIFIED))){
-									Algo = 1;
-								}
-							}
-		                    else
-							{
-								if(sCounter == maxClock && page_WS_max_sweeps >= 0){
-									Algo = 1;
-								}
-							}
 
-							if(Algo == 1)
+							victimWSElement = faulted_env->page_last_WS_element;
+							while(1 == 1)
 							{
-								uint32 *leavingPTelement;
-								get_page_table((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
-								struct FrameInfo *leavingFrame = get_frame_info((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
-								if(perms & PERM_MODIFIED)
+								uint32 leaving_va = victimWSElement->virtual_address;
+								uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
+
+								if(perms & PERM_USED)
 								{
-									pf_update_env_page(faulted_env,leaving_va,leavingFrame);
-								}
-
-								//updating the working set
-								prevElement = LIST_PREV(leaving_element);
-								LIST_REMOVE(&(faulted_env->page_WS_list),leaving_element);;
-								if(prevElement == NULL)
-								{
-									LIST_INSERT_HEAD(&(faulted_env->page_WS_list),new_element);
+									pt_set_page_permissions((faulted_env->env_page_directory),leaving_va,0,PERM_USED);
+									victimWSElement->sweeps_counter = 0;
+									victimWSElement = LIST_NEXT(victimWSElement);
+									if(victimWSElement == NULL)
+									{
+										victimWSElement = LIST_FIRST(&(faulted_env->page_WS_list));
+									}
 								}
 								else
 								{
-								    LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
+									int Algo = 0;
+									victimWSElement->sweeps_counter++;
+									uint32 sCounter = victimWSElement->sweeps_counter;
+
+									if(page_WS_max_sweeps < 0)
+									{
+				                        if((sCounter >= maxClock && !(perms & PERM_MODIFIED)) || (sCounter >= (maxClock + 1) && (perms & PERM_MODIFIED))){
+											Algo = 1;
+										}
+									}
+				                    else
+									{
+										if(sCounter >= maxClock)
+										{cprintf("I'm here");
+											Algo = 1;
+										}
+									}
+
+									if(Algo == 1)
+									{
+										uint32 *leavingPTelement;
+										get_page_table((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
+										struct FrameInfo *leavingFrame = get_frame_info((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
+										if(perms & PERM_MODIFIED)
+										{
+											pf_update_env_page(faulted_env,leaving_va,leavingFrame);
+										}
+
+										//updating the working set
+										prevElement = LIST_PREV(victimWSElement);
+										LIST_REMOVE(&(faulted_env->page_WS_list),victimWSElement);;
+										if(prevElement == NULL)
+										{
+											LIST_INSERT_HEAD(&(faulted_env->page_WS_list),new_element);
+										}
+										else
+										{
+										    LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
+										}
+										free_frame(leavingFrame);
+										//kfree(&leaving_va);
+										//unmap_frame((faulted_env->env_page_directory),leaving_va);
+										struct  FrameInfo *ptr_element_frame;
+										        allocate_frame(&(ptr_element_frame));
+										map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE | PERM_USED);
+										faulted_env->page_last_WS_element =(struct WorkingSetElement *) LIST_NEXT(new_element);
+
+										break;
+									}
+									victimWSElement = LIST_NEXT(victimWSElement);
+									if(victimWSElement == NULL)
+									{
+										victimWSElement = LIST_FIRST(&(faulted_env->page_WS_list));
+									}
 								}
-								unmap_frame((faulted_env->env_page_directory),leaving_va);
-								map_frame((faulted_env->env_page_directory),leavingFrame,fault_va,PERM_USER | PERM_WRITEABLE | PERM_USED);
-								faulted_env->page_last_WS_element =(struct WorkingSetElement *) LIST_NEXT(new_element);
-		                        if(faulted_env->page_last_WS_element == NULL)
-								{
-									faulted_env->page_last_WS_element = (struct WorkingSetElement *) LIST_FIRST(&(faulted_env->page_WS_list));
-								}
-								break;
 							}
-							leaving_element = LIST_NEXT(leaving_element);
-							if(leaving_element == NULL)
-							{
-								leaving_element = LIST_FIRST(&(faulted_env->page_WS_list));
-							}
-						}
-					}
 
 	}
 }
