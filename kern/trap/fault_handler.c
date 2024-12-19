@@ -239,9 +239,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
 
-		//cprintf("%d \n", wsSize);
-		//cprintf("%d \n", (faulted_env->page_WS_max_size));
-		//uint32 freePages = sys_calculate_free_frames();
+
 
 	if(wsSize < (faulted_env->page_WS_max_size))
 	{
@@ -250,7 +248,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
 		//panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
-
 		//refer to the project presentation and documentation for details
 
 		struct  FrameInfo *ptr_element_frame;
@@ -295,11 +292,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//TODO: [PROJECT'24.MS3] [2] FAULT HANDLER II - Replacement
 		// Write your code here, remove the panic and write your code
 		//panic("page_fault_handler() Replacement is not implemented yet...!!");
-
-//		int checking  = pf_read_env_page(faulted_env , &fault_va);
-//					cprintf("%d",fault_va);
-//		            cprintf("%d",checking);
-		//cprintf("virtual address: %d \n",fault_va);
 
 		int maxClock;
 		int algo;
@@ -355,35 +347,38 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 
 				if(Algo == 1)
 				{
+					//Getting victim's frame
 					uint32 *leavingPTelement;
-					//get_page_table((faulted_env->env_page_directory),0,leaving_va,&leavingPTelement);
 					struct FrameInfo *leavingFrame = get_frame_info((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
 
+					//If the victim is modified update
 					if(perms & PERM_MODIFIED)
 					{
 						pf_update_env_page(faulted_env,leaving_va,leavingFrame);
 					}
-					//updating the working set
+
+					//Getting previous and next element for the victim to insert new
 					prevElement = LIST_PREV(victimWSElement);
 					nextElement = LIST_NEXT(victimWSElement);
-					///
-					//kfree(&leaving_va);
-					env_page_ws_invalidate(faulted_env, leaving_va);
-					//unmap_frame((faulted_env->env_page_directory),leaving_va);
-					fault_va = ROUNDDOWN(fault_va, PAGE_SIZE);
-					//free_frame(leavingFrame);
-					struct  FrameInfo *ptr_element_frame = NULL;
-							allocate_frame(&(ptr_element_frame));
 
+					//Removing Victim from WS and deallocating it in kernel space
+					env_page_ws_invalidate(faulted_env, leaving_va);
+
+					//mapping new element
+					fault_va = ROUNDDOWN(fault_va, PAGE_SIZE);
+					struct  FrameInfo *ptr_element_frame = NULL;
+					allocate_frame(&(ptr_element_frame));
 					map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE | PERM_USED);
-					//LIST_REMOVE(&(faulted_env->page_WS_list),victimWSElement);
-					if (pf_read_env_page(faulted_env, (void*)fault_va) == E_PAGE_NOT_EXIST_IN_PF) {
-						if (((fault_va <= USER_HEAP_START && fault_va > USER_HEAP_MAX) && (fault_va <= USTACKBOTTOM && fault_va > USTACKTOP)))
-						{
-							unmap_frame(faulted_env->env_page_directory, fault_va);
-							break;
-						}
-					}
+					//checks if page doesn't exist in page file
+					bool notExist = (pf_read_env_page(faulted_env, (void*)fault_va) == E_PAGE_NOT_EXIST_IN_PF);
+//					if (notExist) {
+//						//bool Boundary =
+//						if (((fault_va <= USER_HEAP_START && fault_va > USER_HEAP_MAX) && (fault_va <= USTACKBOTTOM && fault_va > USTACKTOP)))
+//						{
+//							unmap_frame(faulted_env->env_page_directory, fault_va);
+//							break;
+//						}
+//					}
 					if(prevElement != NULL)
 					{
 						LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
