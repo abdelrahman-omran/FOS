@@ -309,118 +309,164 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env,fault_va);
 		struct WorkingSetElement* prevElement;
 		struct WorkingSetElement* nextElement;
-		//struct WorkingSetElement* movingElement;
-		//struct WorkingSetElement* firstElement;
-		victimWSElement = faulted_env->page_last_WS_element;
-	while(1 == 1)
-			{
-			uint32 leaving_va = victimWSElement->virtual_address;
+		struct WorkingSetElement* movingElement;
+		struct WorkingSetElement* firstElement;
+
+		firstElement = faulted_env->page_last_WS_element;
+		movingElement = firstElement;
+		int diff = 0;
+		int maxsweep = -2;
+		bool blocked = 0;
+		//env_page_ws_print(faulted_env);
+		for(int i = 0; i<wsSize ;i++)
+		{
+			uint32 leaving_va = movingElement->virtual_address;
 			uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
-			//If element is used, upadte it to be unused, and clear sweeps counter
+			bool unmodified = ((int)movingElement->sweeps_counter > maxsweep && !(perms & PERM_MODIFIED));
+			bool modified = ((int)movingElement->sweeps_counter -1 > maxsweep && (perms & PERM_MODIFIED));
+			bool normal = (int)movingElement->sweeps_counter > maxsweep;
 			if(perms & PERM_USED)
 			{
+			//	cprintf("DID I GET HERE??\n");
 				pt_set_page_permissions((faulted_env->env_page_directory),leaving_va,0,PERM_USED);
-				victimWSElement->sweeps_counter = 0;
-				victimWSElement = LIST_NEXT(victimWSElement);
-				if(victimWSElement == NULL)
+				movingElement->sweeps_counter = 0;
+				if((int) movingElement->sweeps_counter - 1 > maxsweep)
 				{
-					victimWSElement = LIST_FIRST(&(faulted_env->page_WS_list));
+					victimWSElement = movingElement;
+					maxsweep = (int)movingElement->sweeps_counter;
+				}
+				if(algo == 0 && modified)
+				{
+					maxsweep--;
 				}
 			}
-			//If not used, increment sweeps counter
-			else
+			else if(algo == 0)
 			{
-				int Algo = 0;
-				victimWSElement->sweeps_counter++;
-				uint32 sCounter = victimWSElement->sweeps_counter;
 
-				//If sweeps counter reaches maxclock, it's the victim
-
-				//MODIFIED mode
-				if(page_WS_max_sweeps < 0)
+				//movingElement->sweeps_counter++;
+				if(unmodified || modified)
 				{
-					if((sCounter >= maxClock && !(perms & PERM_MODIFIED)) || (sCounter >= (maxClock + 1) && (perms & PERM_MODIFIED))){
-						Algo = 1;
+					victimWSElement = movingElement;
+					maxsweep = (int)movingElement->sweeps_counter;
+					if(modified){
+						//cprintf("hello\n");
+						maxsweep--;
+						//cprintf("%d \n",maxsweep);
+
+					}
+					if(maxsweep>=maxClock-1)
+					{
+						blocked = 1;
+						break;
 					}
 				}
-				//NORMAL mode
-				else
+			}
+			else if(algo == 1)
+			{
+				//movingElement->sweeps_counter++;
+				//cprintf("DID I GET HERE2222??\n");
+				//cprintf("%d \n",maxsweep);
+				//cprintf("%d \n",movingElement->sweeps_counter);
+				//cprintf("%d \n",maxClock);
+				//bool yes = (int)(movingElement->sweeps_counter) > (int)maxsweep;
+				//cprintf("%d \n",yes);
+				if(normal)
 				{
-					if(sCounter >= maxClock){
-						Algo = 1;
+					//cprintf("DID I GET HERE??\n");
+					victimWSElement = movingElement;
+					maxsweep = (int)movingElement->sweeps_counter;
+					if(maxsweep>=maxClock-1)
+					{
+						blocked = 1;
+						break;
 					}
 				}
+			}
 
-				if(Algo == 1)
-				{
-					//Getting victim's frame
-					uint32 *leavingPTelement;
-					struct FrameInfo *leavingFrame = get_frame_info((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
-
-					//If the victim is modified update
-					if(perms & PERM_MODIFIED)
-					{
-						pf_update_env_page(faulted_env,leaving_va,leavingFrame);
-					}
-
-					//Getting previous and next element for the victim to insert new
-					prevElement = LIST_PREV(victimWSElement);
-					nextElement = LIST_NEXT(victimWSElement);
-
-					//Removing Victim from WS and deallocating it in kernel space
-					env_page_ws_invalidate(faulted_env, leaving_va);
-
-					//mapping new element
-					fault_va = ROUNDDOWN(fault_va, PAGE_SIZE);
-					struct  FrameInfo *ptr_element_frame = NULL;
-					allocate_frame(&(ptr_element_frame));
-					map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE | PERM_USED);
-
-					//check if faulted virtual address in page doesn't exist in page file
-					bool notExist = pf_read_env_page(faulted_env, (void*)fault_va) == E_PAGE_NOT_EXIST_IN_PF;
-					if (notExist) {
-
-						//check if faulted virtual address is in the user heap and user stack
-						bool InUserHeap = (fault_va > USER_HEAP_START && fault_va <= USER_HEAP_MAX);
-						bool InUserStack = (fault_va > USTACKBOTTOM && fault_va <= USTACKTOP);
-						//If it's not unmap it
-						if (!InUserHeap || !InUserStack)
-						{
-							unmap_frame(faulted_env->env_page_directory, fault_va);
-							break;
-						}
-					}
-
-					//Adding new element to WS
-					if(prevElement != NULL)
-					{
-						LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
-					}
-					else
-					{
-						LIST_INSERT_BEFORE(&(faulted_env->page_WS_list),nextElement,new_element);
-					}
-
-
-					//Updating pointer to (NEXT) last inserted element.
-					faulted_env->page_last_WS_element = LIST_NEXT(new_element);
-					if(faulted_env->page_last_WS_element == NULL)
-					{
-						faulted_env->page_last_WS_element = LIST_FIRST(&(faulted_env->page_WS_list));
-					}
-					/* Debugging Prints */
-					//env_page_ws_print(faulted_env);
-					//cprintf("virtual address: %d \n",new_element->virtual_address);
-
-					break;
-				}
-				victimWSElement = LIST_NEXT(victimWSElement);
-				if(victimWSElement == NULL)
-				{
-					victimWSElement = LIST_FIRST(&(faulted_env->page_WS_list));
-				}
+			movingElement = LIST_NEXT(movingElement);
+			if(movingElement == NULL)
+			{
+				movingElement = LIST_FIRST(&(faulted_env->page_WS_list));
 			}
 		}
+		//Making sure maxsweep != -1 to add the diff correctly
+
+		diff = maxClock - maxsweep - 1;
+		if(maxClock == 0)
+			diff = 0;
+		//cprintf("%d \n",maxsweep);
+		//cprintf("%d \n",diff);
+		//cprintf("%d \n",maxClock);
+
+		uint32 leaving_va = victimWSElement->virtual_address;
+		uint32 *leavingPTelement;
+		//get_page_table((faulted_env->env_page_directory),0,leaving_va,&leavingPTelement);
+		struct FrameInfo *leavingFrame = get_frame_info((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
+		uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
+
+		//save modified files
+		if(perms & PERM_MODIFIED)
+		{
+			pf_update_env_page(faulted_env,leaving_va,leavingFrame);
+		}
+
+		//updating the working set
+		prevElement = LIST_PREV(victimWSElement);
+		nextElement = LIST_NEXT(victimWSElement);
+
+		env_page_ws_invalidate(faulted_env, leaving_va);
+		fault_va = ROUNDDOWN(fault_va, PAGE_SIZE);
+
+		struct  FrameInfo *ptr_element_frame = NULL;
+		allocate_frame(&(ptr_element_frame));
+		map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE | PERM_USED);
+		//LIST_REMOVE(&(faulted_env->page_WS_list),victimWSElement);
+		if (pf_read_env_page(faulted_env, (void*)fault_va) == E_PAGE_NOT_EXIST_IN_PF) {
+			if (((fault_va <= USER_HEAP_START && fault_va > USER_HEAP_MAX) && (fault_va <= USTACKBOTTOM && fault_va > USTACKTOP)))
+			{
+				unmap_frame(faulted_env->env_page_directory, fault_va);
+
+			}
+		}
+		if(prevElement != NULL)
+		{
+			LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
+		}
+		else
+		{
+			LIST_INSERT_BEFORE(&(faulted_env->page_WS_list),nextElement,new_element);
+		}
+
+		//victimWSElement = NULL;
+
+		//cprintf("virtual address: %d \n",new_element->virtual_address);
+		//new_element->virtual_address = fault_va;
+
+		faulted_env->page_last_WS_element = LIST_NEXT(new_element);
+		if(faulted_env->page_last_WS_element == NULL)
+		{
+			faulted_env->page_last_WS_element = LIST_FIRST(&(faulted_env->page_WS_list));
+		}
+
+		movingElement = firstElement;
+//Add diff to all elements except the new inserted element
+
+		for(int i = 0; i<=wsSize;i++)
+				{
+					if(movingElement == new_element && blocked)
+						break;
+					if(movingElement!= new_element)
+					{
+						movingElement->sweeps_counter += diff;
+					}
+
+					movingElement = LIST_NEXT(movingElement);
+					if(movingElement == NULL)
+					{
+						movingElement = LIST_FIRST(&(faulted_env->page_WS_list));
+					}
+				}
+		//env_page_ws_print(faulted_env);
 
 	}
 }
