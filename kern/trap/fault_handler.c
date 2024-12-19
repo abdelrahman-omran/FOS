@@ -300,8 +300,8 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		/* N: max sweeps, M: WS Size
 		 * Old algorithm have time complexity of O(N.M)
 		 * Optimized algorithm to select a victim element in O(M) time.
-		 * Instead of iterating N times,it iterates one time on WS, then extracts the element with the maximum sweep counter
-		 * then adding to other counters the difference between the max clock and the maximum sweep counter.
+		 * Instead of iterating N times,it iterates one time on WS, extracting the element with the maximum sweep counter
+		 * then adding to other sweep counters the difference between the max clock and the previous maximum sweep counter.
 		 */
 		int maxClock;
 		int algo;
