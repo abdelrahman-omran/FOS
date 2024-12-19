@@ -293,6 +293,16 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		// Write your code here, remove the panic and write your code
 		//panic("page_fault_handler() Replacement is not implemented yet...!!");
 
+		/* Efficint Nth Clock Replacement Implementation */
+
+		/* Algorithm Description */
+
+		/* N: max sweeps, M: WS Size
+		 * Old algorithm have time complexity of O(N.M)
+		 * Optimized algorithm to select a victim element in O(M) time.
+		 * Instead of iterating N times,it iterates one time on WS, then extracts the element with the maximum sweep counter
+		 * then adding to other counters the difference between the max clock and the maximum sweep counter.
+		 */
 		int maxClock;
 		int algo;
 		//MODIFIED MODE
@@ -311,47 +321,58 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env,fault_va);
 		struct WorkingSetElement* prevElement;
 		struct WorkingSetElement* nextElement;
-		struct WorkingSetElement* movingElement;
-		struct WorkingSetElement* firstElement;
+		struct WorkingSetElement* movingElement = faulted_env->page_last_WS_element;
+		struct WorkingSetElement* firstElement = faulted_env->page_last_WS_element;
 
-		firstElement = faulted_env->page_last_WS_element;
-		movingElement = firstElement;
 		int diff = 0;
-		int maxsweep = -2;
+		int maxSweep = -2;
 		bool blocked = 0;
 
 		//env_page_ws_print(faulted_env);
 
 		for(int i = 0; i<wsSize ;i++)
 		{
+			//Getting current element permission
 			uint32 leaving_va = movingElement->virtual_address;
 			uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
-			bool unmodified = ((int)movingElement->sweeps_counter > maxsweep && !(perms & PERM_MODIFIED));
-			bool modified = ((int)movingElement->sweeps_counter -1 > maxsweep && (perms & PERM_MODIFIED));
-			bool normal = (int)movingElement->sweeps_counter > maxsweep;
+
+			/* Algorithm and Current element type */
+			bool unmodified = ((int)movingElement->sweeps_counter > maxSweep && !(perms & PERM_MODIFIED));
+			bool modified = ((int)movingElement->sweeps_counter -1 > maxSweep && (perms & PERM_MODIFIED));
+			bool normal = ((int)movingElement->sweeps_counter > maxSweep);
+
+			//If element is used, update it to be unused, and clear sweeps counter
 			if(perms & PERM_USED)
 			{
 				pt_set_page_permissions((faulted_env->env_page_directory),leaving_va,0,PERM_USED);
 				movingElement->sweeps_counter = 0;
-				if((int) movingElement->sweeps_counter - 1 > maxsweep)
+
+				//Check if current element's sweep counter is greater than maxSweep
+				if((int) movingElement->sweeps_counter - 1 > maxSweep)
 				{
+					//if so, update both victimWSElement and maxSweep
 					victimWSElement = movingElement;
-					maxsweep = (int)movingElement->sweeps_counter;
+					maxSweep = (int)movingElement->sweeps_counter;
 				}
+				//if it's in Modified mode and current element is modified decrement maxSweep
 				if(algo == 1 && modified)
 				{
-					maxsweep--;
+					maxSweep--;
 				}
 			}
 			//NORMAL MODE
 			else if(algo == 0)
 			{
-
+				//if movingElement->sweeps_counter > maxSweep
 				if(normal)
 				{
+					//updating both victimWSElement and maxSweep
 					victimWSElement = movingElement;
-					maxsweep = (int)movingElement->sweeps_counter;
-					if(maxsweep>=maxClock-1)
+					maxSweep = (int)movingElement->sweeps_counter;
+
+					//if current element sweep counter is less than max clock by 1
+					//means it will be immediately replaced without checking other elements
+					if(maxSweep>=maxClock-1)
 					{
 						blocked = 1;
 						break;
@@ -361,15 +382,19 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			//MODIFIED MODE
 			else if(algo == 1)
 			{
-
+				//if movingElement->sweeps_counter > maxSweep
 				if(unmodified || modified)
 				{
+					//updating both victimWSElement and maxSweep
 					victimWSElement = movingElement;
-					maxsweep = (int)movingElement->sweeps_counter;
+					maxSweep = (int)movingElement->sweeps_counter;
+
+					//if current element is modified decrement maxSweep
 					if(modified){
-						maxsweep--;
+						maxSweep--;
 					}
-					if(maxsweep>=maxClock-1)
+					//same as normal mode
+					if(maxSweep>=maxClock-1)
 					{
 						blocked = 1;
 						break;
@@ -377,7 +402,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 				}
 			}
 
-
+			//Moving to next element in WS
 			movingElement = LIST_NEXT(movingElement);
 			if(movingElement == NULL)
 			{
@@ -385,29 +410,28 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			}
 		}
 
-
-		diff = maxClock - maxsweep - 1;
+		//Calculating difference between max clock and maxsweep
+		diff = maxClock - maxSweep - 1;
 		if(maxClock == 0)
 			diff = 0;
+
+		//Updating elements' sweep counter
 		movingElement = firstElement;
-
-		//Add diff to all elements except the new inserted element
-
 		for(int i = 0; i<=wsSize;i++)
-				{
-					if(movingElement == victimWSElement && blocked)
-						break;
-					if(movingElement!= victimWSElement)
-					{
-						movingElement->sweeps_counter += diff;
-					}
+		{
+			if(movingElement == victimWSElement && blocked)
+				break;
+			if(movingElement!= victimWSElement)
+			{
+				movingElement->sweeps_counter += diff;
+			}
 
-					movingElement = LIST_NEXT(movingElement);
-					if(movingElement == NULL)
-					{
-						movingElement = LIST_FIRST(&(faulted_env->page_WS_list));
-					}
-				}
+			movingElement = LIST_NEXT(movingElement);
+			if(movingElement == NULL)
+			{
+				movingElement = LIST_FIRST(&(faulted_env->page_WS_list));
+			}
+		}
 
 		uint32 leaving_va = victimWSElement->virtual_address;
 
@@ -450,6 +474,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			}
 		}
 
+		//Inserting new element in WS
 		if(prevElement != NULL)
 		{
 			LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
@@ -459,11 +484,8 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			LIST_INSERT_BEFORE(&(faulted_env->page_WS_list),nextElement,new_element);
 		}
 
-		//victimWSElement = NULL;
 
-		//cprintf("virtual address: %d \n",new_element->virtual_address);
-		//new_element->virtual_address = fault_va;
-
+		//Updating page_last_WS_element pointer
 		faulted_env->page_last_WS_element = LIST_NEXT(new_element);
 		if(faulted_env->page_last_WS_element == NULL)
 		{
@@ -471,7 +493,9 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		}
 
 
+		/* Debugging Prints */
 		//env_page_ws_print(faulted_env);
+		//cprintf("virtual address: %d \n",new_element->virtual_address);
 
 	}
 }
