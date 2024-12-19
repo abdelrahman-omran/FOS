@@ -309,14 +309,14 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env,fault_va);
 		struct WorkingSetElement* prevElement;
 		struct WorkingSetElement* nextElement;
-		struct WorkingSetElement* movingElement;
-		struct WorkingSetElement* firstElement;
+		//struct WorkingSetElement* movingElement;
+		//struct WorkingSetElement* firstElement;
 		victimWSElement = faulted_env->page_last_WS_element;
 	while(1 == 1)
 			{
 			uint32 leaving_va = victimWSElement->virtual_address;
 			uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
-
+			//If element is used, upadte it to be unused, and clear sweeps counter
 			if(perms & PERM_USED)
 			{
 				pt_set_page_permissions((faulted_env->env_page_directory),leaving_va,0,PERM_USED);
@@ -327,17 +327,23 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					victimWSElement = LIST_FIRST(&(faulted_env->page_WS_list));
 				}
 			}
+			//If not used, increment sweeps counter
 			else
 			{
 				int Algo = 0;
 				victimWSElement->sweeps_counter++;
 				uint32 sCounter = victimWSElement->sweeps_counter;
+
+				//If sweeps counter reaches maxclock, it's the victim
+
+				//MODIFIED mode
 				if(page_WS_max_sweeps < 0)
 				{
 					if((sCounter >= maxClock && !(perms & PERM_MODIFIED)) || (sCounter >= (maxClock + 1) && (perms & PERM_MODIFIED))){
 						Algo = 1;
 					}
 				}
+				//NORMAL mode
 				else
 				{
 					if(sCounter >= maxClock){
@@ -369,16 +375,23 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					struct  FrameInfo *ptr_element_frame = NULL;
 					allocate_frame(&(ptr_element_frame));
 					map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE | PERM_USED);
-					//checks if page doesn't exist in page file
-					bool notExist = (pf_read_env_page(faulted_env, (void*)fault_va) == E_PAGE_NOT_EXIST_IN_PF);
-//					if (notExist) {
-//						//bool Boundary =
-//						if (((fault_va <= USER_HEAP_START && fault_va > USER_HEAP_MAX) && (fault_va <= USTACKBOTTOM && fault_va > USTACKTOP)))
-//						{
-//							unmap_frame(faulted_env->env_page_directory, fault_va);
-//							break;
-//						}
-//					}
+
+					//check if faulted virtual address in page doesn't exist in page file
+					bool notExist = pf_read_env_page(faulted_env, (void*)fault_va) == E_PAGE_NOT_EXIST_IN_PF;
+					if (notExist) {
+
+						//check if faulted virtual address is in the user heap and user stack
+						bool InUserHeap = (fault_va > USER_HEAP_START && fault_va <= USER_HEAP_MAX);
+						bool InUserStack = (fault_va > USTACKBOTTOM && fault_va <= USTACKTOP);
+						//If it's not unmap it
+						if (!InUserHeap || !InUserStack)
+						{
+							unmap_frame(faulted_env->env_page_directory, fault_va);
+							break;
+						}
+					}
+
+					//Adding new element to WS
 					if(prevElement != NULL)
 					{
 						LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
@@ -388,18 +401,17 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 						LIST_INSERT_BEFORE(&(faulted_env->page_WS_list),nextElement,new_element);
 					}
 
-					//victimWSElement = NULL;
 
-					//cprintf("virtual address: %d \n",new_element->virtual_address);
-					//new_element->virtual_address = fault_va;
-
+					//Updating pointer to (NEXT) last inserted element.
 					faulted_env->page_last_WS_element = LIST_NEXT(new_element);
 					if(faulted_env->page_last_WS_element == NULL)
 					{
 						faulted_env->page_last_WS_element = LIST_FIRST(&(faulted_env->page_WS_list));
 					}
-
+					/* Debugging Prints */
 					//env_page_ws_print(faulted_env);
+					//cprintf("virtual address: %d \n",new_element->virtual_address);
+
 					break;
 				}
 				victimWSElement = LIST_NEXT(victimWSElement);
@@ -409,7 +421,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 				}
 			}
 		}
-		//env_page_ws_print(faulted_env);
 
 	}
 }
