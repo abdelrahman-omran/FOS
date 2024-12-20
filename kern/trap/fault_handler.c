@@ -336,7 +336,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			uint32 leaving_va = movingElement->virtual_address;
 			uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
 
-			/* Algorithm and Current element type */
+			//Algorithm and Current element type
 			bool unmodified = ((int)movingElement->sweeps_counter > maxSweep && !(perms & PERM_MODIFIED));
 			bool modified = ((int)movingElement->sweeps_counter -1 > maxSweep && (perms & PERM_MODIFIED));
 			bool normal = ((int)movingElement->sweeps_counter > maxSweep);
@@ -479,9 +479,13 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		{
 			LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
 		}
-		else
+		else if(nextElement != NULL)
 		{
 			LIST_INSERT_BEFORE(&(faulted_env->page_WS_list),nextElement,new_element);
+		}
+		else //means that WS has size of 1
+		{
+			LIST_INSERT_TAIL(&(faulted_env->page_WS_list),new_element);
 		}
 
 
