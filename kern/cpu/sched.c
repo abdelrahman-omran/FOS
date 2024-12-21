@@ -249,15 +249,22 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	//TODO: [PROJECT'24.MS3 - #07] [3] PRIORITY RR Scheduler - sched_init_PRIRR
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	//panic("Not implemented yet");
 
-
-
-
-
-
-
-
+	sched_delete_ready_queues();
+	// prio
+	acquire_spinlock(&ProcessQueues.qlock);
+	ProcessQueues.env_ready_queues = kmalloc(sizeof(struct Env_Queue)*numOfPriorities);
+	release_spinlock(&ProcessQueues.qlock);
+	num_of_ready_queues = numOfPriorities;
+	// quan
+	quantums = kmalloc(sizeof(uint8)) ;
+	quantums[0] = quantum;
+	// star
+	strv = starvThresh;
+	// other
+	/*ProcessQueues.env_new_queue = kmalloc(sizeof(struct Env_Queue));
+	ProcessQueues.env_exit_queue = kmalloc(sizeof(struct Env_Queue));*/
 
 	//=========================================
 	//DON'T CHANGE THESE LINES=================
@@ -350,7 +357,24 @@ struct Env* fos_scheduler_PRIRR()
 	//TODO: [PROJECT'24.MS3 - #08] [3] PRIORITY RR Scheduler - fos_scheduler_PRIRR
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	// panic("Not implemented yet");
+
+	struct Env* myEnv = get_cpu_proc();
+	if(myEnv!=NULL){
+		sched_insert_ready(myEnv);
+	}
+	struct Env* nxt = NULL;
+
+	for(int i = 0 ; i<num_of_ready_queues ; i++){
+		if(queue_size(&(ProcessQueues.env_ready_queues[i]))!=0){
+            nxt = dequeue(&(ProcessQueues.env_ready_queues[i]));
+            break;
+        }
+	}
+
+
+	kclock_set_quantum (quantums[0]);
+	return nxt;
 }
 
 //========================================
@@ -364,13 +388,33 @@ void clock_interrupt_handler(struct Trapframe* tf)
 		//TODO: [PROJECT'24.MS3 - #09] [3] PRIORITY RR Scheduler - clock_interrupt_handler
 		//Your code is here
 		//Comment the following line
-		panic("Not implemented yet");
+		//panic("Not implemented yet");
+
+		struct Env* currEnv = NULL;
+		// Note: not using remove and insert helper functions to reduce time (get away from loops)
+		// if process exceeded starvation threshold -> promote
+		for(int i = 1; i < num_of_ready_queues; i++){
+			acquire_spinlock(&ProcessQueues.qlock);
+			LIST_FOREACH(currEnv, &(ProcessQueues.env_ready_queues[i])){
+				currEnv->nStarv++;
+				// if process exceeds starvation threshold
+				if(currEnv->nStarv > strv){
+					// remove from current prio queue
+					remove_from_queue(&(ProcessQueues.env_ready_queues[i]), currEnv);
+					// promote prio
+					currEnv->priority--;
+					currEnv->nStarv = 0;
+					// add to new prio queue
+					enqueue(&(ProcessQueues.env_ready_queues[i-1]), currEnv);
+				}
+			}
+			release_spinlock(&ProcessQueues.qlock);
+		}
+
 	}
 
-
-
 	/********DON'T CHANGE THESE LINES***********/
-	ticks++ ;
+	ticks++;
 	struct Env* p = get_cpu_proc();
 	if (p == NULL)
 	{
